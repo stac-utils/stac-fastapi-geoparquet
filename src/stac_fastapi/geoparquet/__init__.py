@@ -1,8 +1,8 @@
-import tomllib
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any, AsyncIterator, TypedDict
 
+import tomllib
 from fastapi import FastAPI
 from stacrs import DuckdbClient
 
