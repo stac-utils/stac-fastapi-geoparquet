@@ -1,0 +1,5 @@
+#!/usr/bin/env sh
+
+set -e
+
+STAC_FASTAPI_GEOPARQUET_HREF=data/naip.parquet uv run fastapi dev src/stac_fastapi/geoparquet/main.py

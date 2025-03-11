@@ -1,0 +1,32 @@
+site_name: stac-fastapi-geoparquet
+repo_url: https://github.com/stac-utils/stac-fastapi-geoparquet/
+repo_name: stac-utils/stac-fastapi-geoparquet
+site_author: Pete Gadomski
+
+theme:
+  name: material
+  logo: assets/logo_no_text.png
+  palette:
+    - media: "(prefers-color-scheme)"
+      toggle:
+        icon: material/brightness-auto
+        name: Switch to light mode
+    - media: "(prefers-color-scheme: light)"
+      primary: default
+      accent: deep orange
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: default
+      accent: deep orange
+      toggle:
+        icon: material/brightness-4
+        name: Switch to system preference
+  font:
+    text: Roboto
+    code: Roboto Mono
+
+extra_css:
+  - overrides/stylesheets/extra.css

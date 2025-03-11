@@ -1,0 +1,11 @@
+{
+  "name": "stac-fastapi-geoparquet-cdk",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "cdk": "cdk"
+  },
+  "devDependencies": {
+    "aws-cdk": "^2.175.1"
+  }
+}

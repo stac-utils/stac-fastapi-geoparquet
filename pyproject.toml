@@ -1,0 +1,76 @@
+[project]
+name = "stac-fastapi-geoparquet"
+version = "0.0.1"
+description = "A stac-fastapi implementation with a stac-geoparquet backend"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "attr>=0.3.2",
+    "fastapi>=0.115.8",
+    "geojson-pydantic>=1.2.0",
+    "pydantic>=2.10.4",
+    "stac-fastapi-api>=5.0.2",
+    "stac-fastapi-extensions>=5.0.2",
+    "stac-fastapi-types>=5.0.2",
+    "stacrs==0.5.8",
+]
+
+[project.optional-dependencies]
+lambda = ["mangum==0.19.0"]
+
+[dependency-groups]
+dev = [
+    "boto3>=1.37.4",
+    "fastapi[standard]>=0.115.6",
+    "httpx>=0.28.1",
+    "mkdocs-material>=9.6.5",
+    "mypy>=1.15.0",
+    "pgstacrs>=0.1.1",
+    "pygithub>=2.6.1",
+    "pystac[validation]>=1.12.2",
+    "pytest>=8.3.4",
+    "pytest-asyncio>=0.25.3",
+    "ruff>=0.9.7",
+    "stac-api-validator>=0.6.3",
+]
+validate = ["stac-api-validator>=0.6.3"]
+deploy = [
+    "aws-cdk-lib==2.130.0",
+    "constructs>=10.3.0",
+    "eoapi-cdk>=8.0.2",
+    "pydantic>=2.10.4",
+    "pydantic-settings>=2.8.0",
+]
+katas = ["ipykernel>=6.29.5", "pystac-client>=0.8.5"]
+
+[tool.uv]
+default-groups = ["dev", "validate", "deploy"]
+
+[tool.mypy]
+strict = true
+files = ["src/**/*.py", "infrastructure/**/*.py"]
+exclude = ["infrastructure/aws/cdk.out/.*"]
+plugins = "pydantic.mypy"
+
+[[tool.mypy.overrides]]
+module = ["stac_fastapi.*", "config", "magnum"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+filterwarnings = [
+    "error",
+    'ignore:datetime.datetime.utcfromtimestamp\(\) is deprecated and scheduled for removal in a future version.:DeprecationWarning',
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src/"]
+include = ["stac_fastapi.geoparquet"]

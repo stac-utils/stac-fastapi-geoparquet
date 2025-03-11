@@ -1,0 +1,23 @@
+#!/usr/bin/env sh
+
+set -e
+
+scripts="$(cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
+"$scripts"/dev >/dev/null 2>/dev/null &
+uvicorn_pid=$!
+
+set +e
+
+"$scripts"/wait-for-it.sh localhost:8000 -- \
+    uv run stac-api-validator --root-url http://localhost:8000 \
+        --conformance core \
+        --conformance features \
+        --collection naip \
+        --geometry '{"type":"Point","coordinates":[-105.1019,40.1672]}' \
+        --conformance item-search
+result=$?
+
+set -e
+
+kill $(pgrep -P $uvicorn_pid)
+exit $result
