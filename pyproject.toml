@@ -64,7 +64,7 @@ default-groups = ["dev", "validate", "deploy"]
 [tool.mypy]
 strict = true
 files = ["src/**/*.py", "infrastructure/**/*.py"]
-exclude = ["infrastructure/aws/cdk.out/.*"]
+exclude = ["infrastructure/aws/cdk.out/.*", ".venv/*"]
 plugins = "pydantic.mypy"
 
 [[tool.mypy.overrides]]
