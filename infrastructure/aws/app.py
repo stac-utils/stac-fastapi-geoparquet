@@ -4,8 +4,6 @@ Generates a Lambda function with an API Gateway trigger and an S3 bucket.
 
 After deploying the stack you will need to make sure the geoparquet file
 specified in the config gets uploaded to the bucket associated with this stack!
-
-Also includes a pgstac for side-by-side testing.
 """
 
 import os
@@ -21,21 +19,9 @@ from aws_cdk import (
 )
 from aws_cdk.aws_apigatewayv2 import HttpApi, HttpStage, ThrottleSettings
 from aws_cdk.aws_apigatewayv2_integrations import HttpLambdaIntegration
-from aws_cdk.aws_ec2 import (
-    GatewayVpcEndpointAwsService,
-    InstanceType,
-    InterfaceVpcEndpointAwsService,
-    Peer,
-    Port,
-    SubnetConfiguration,
-    SubnetSelection,
-    SubnetType,
-    Vpc,
-)
 from aws_cdk.aws_iam import AnyPrincipal, Effect, PolicyStatement
 from aws_cdk.aws_lambda import Code, Function, Runtime
 from aws_cdk.aws_logs import RetentionDays
-from aws_cdk.aws_rds import DatabaseInstanceEngine, PostgresEngineVersion
 from aws_cdk.aws_s3 import BlockPublicAccess, Bucket
 from aws_cdk.custom_resources import (
     AwsCustomResource,
@@ -45,50 +31,6 @@ from aws_cdk.custom_resources import (
 )
 from config import Config
 from constructs import Construct
-from eoapi_cdk import PgStacApiLambda, PgStacDatabase
-
-
-class VpcStack(Stack):
-    def __init__(
-        self, scope: Construct, config: Config, id: str, **kwargs: Any
-    ) -> None:
-        super().__init__(scope, id=id, tags=config.tags, **kwargs)
-
-        self.vpc = Vpc(
-            self,
-            "vpc",
-            subnet_configuration=[
-                SubnetConfiguration(
-                    name="ingress", subnet_type=SubnetType.PUBLIC, cidr_mask=24
-                ),
-                SubnetConfiguration(
-                    name="application",
-                    subnet_type=SubnetType.PRIVATE_WITH_EGRESS,
-                    cidr_mask=24,
-                ),
-                SubnetConfiguration(
-                    name="rds",
-                    subnet_type=SubnetType.PRIVATE_ISOLATED,
-                    cidr_mask=24,
-                ),
-            ],
-            nat_gateways=config.nat_gateway_count,
-        )
-        self.vpc.add_interface_endpoint(
-            "SecretsManagerEndpoint",
-            service=InterfaceVpcEndpointAwsService.SECRETS_MANAGER,
-        )
-        self.vpc.add_interface_endpoint(
-            "CloudWatchEndpoint",
-            service=InterfaceVpcEndpointAwsService.CLOUDWATCH_LOGS,
-        )
-        self.vpc.add_gateway_endpoint("S3", service=GatewayVpcEndpointAwsService.S3)
-        self.export_value(
-            self.vpc.select_subnets(subnet_type=SubnetType.PUBLIC).subnets[0].subnet_id
-        )
-        self.export_value(
-            self.vpc.select_subnets(subnet_type=SubnetType.PUBLIC).subnets[1].subnet_id
-        )
 
 
 class StacFastApiGeoparquetStack(Stack):
@@ -209,58 +151,8 @@ class StacFastApiGeoparquetStack(Stack):
         CfnOutput(self, "ApiURL", value=stage.url)
 
 
-class StacFastApiPgstacStack(Stack):
-    def __init__(
-        self,
-        scope: Construct,
-        vpc: Vpc,
-        id: str,
-        config: Config,
-        **kwargs: Any,
-    ) -> None:
-        super().__init__(
-            scope,
-            id=id,
-            tags=config.tags,
-            **kwargs,
-        )
-        pgstac_db = PgStacDatabase(
-            self,
-            "pgstac-db",
-            vpc=vpc,
-            engine=DatabaseInstanceEngine.postgres(
-                version=PostgresEngineVersion.VER_16
-            ),
-            vpc_subnets=SubnetSelection(subnet_type=(SubnetType.PUBLIC)),
-            allocated_storage=config.pgstac_db_allocated_storage,
-            instance_type=InstanceType(config.pgstac_db_instance_type),
-            removal_policy=RemovalPolicy.DESTROY,
-        )
-        # allow connections from any ipv4 to pgbouncer instance security group
-        assert pgstac_db.security_group
-        pgstac_db.security_group.add_ingress_rule(Peer.any_ipv4(), Port.tcp(5432))
-        pgstac_api = PgStacApiLambda(
-            self,
-            "stac-api",
-            api_env={
-                "NAME": "stac-fastapi-pgstac",
-                "description": f"{config.stage} STAC API",
-            },
-            db=pgstac_db.connection_target,
-            db_secret=pgstac_db.pgstac_secret,
-            stac_api_domain_name=None,
-        )
-
-        assert pgstac_api.url
-        CfnOutput(self, "ApiURL", value=pgstac_api.url)
-
-
 app = App()
 config = Config()
-vpc_stack = VpcStack(scope=app, config=config, id=f"vpc-{config.name}")
-StacFastApiPgstacStack(
-    scope=app, vpc=vpc_stack.vpc, config=config, id=f"{config.name}-pgstac"
-)
 StacFastApiGeoparquetStack(
     app,
     config.stack_name,

@@ -1926,6 +1926,9 @@ dependencies = [
 lambda = [
     { name = "mangum" },
 ]
+serve = [
+    { name = "uvicorn" },
+]
 
 [package.dev-dependencies]
 deploy = [
@@ -1968,8 +1971,9 @@ requires-dist = [
     { name = "stac-fastapi-extensions", specifier = ">=5.0.2" },
     { name = "stac-fastapi-types", specifier = ">=5.0.2" },
     { name = "stacrs", specifier = "==0.5.8" },
+    { name = "uvicorn", marker = "extra == 'serve'", specifier = ">=0.34.0" },
 ]
-provides-extras = ["lambda"]
+provides-extras = ["lambda", "serve"]
 
 [package.metadata.requires-dev]
 deploy = [
