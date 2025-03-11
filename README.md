@@ -2,7 +2,7 @@
 
 A [stac-fastapi](https://github.com/stac-utils/stac-fastapi) with a [stac-geoparquet](https://github.com/stac-utils/stac-geoparquet/blob/main/spec/stac-geoparquet-spec.md) backend.
 
-**stac-fastapi-geoparquet** can serve a full-featured STAC API from a **stac-geoparquet** file located (e.g.) in blob storage — no database required!
+**stac-fastapi-geoparquet** can serve a full-featured STAC API from a **stac-geoparquet** file located (e.g.) in blob storage — no database required.
 
 > [!WARNING]
 > 👷 This project is under active development and may change and break at any time.
