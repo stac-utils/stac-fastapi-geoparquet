@@ -46,7 +46,11 @@ class State(TypedDict):
 
 def create_api(settings: Settings | None = None) -> StacApi:
     if settings is None:
-        settings = Settings()
+        settings = Settings(
+            stac_fastapi_landing_id="stac-fastapi-geoparquet",
+            stac_fastapi_title="stac-geoparquet-geoparquet",
+            stac_fastapi_description="A stac-fastapi server backend by stac-geoparquet",
+        )
 
     if settings.stac_fastapi_geoparquet_href.endswith(".toml"):
         with open(settings.stac_fastapi_geoparquet_href, "rb") as f:
@@ -86,11 +90,7 @@ def create_api(settings: Settings | None = None) -> StacApi:
         }
 
     api = StacApi(
-        settings=Settings(
-            stac_fastapi_landing_id="stac-fastapi-geoparquet",
-            stac_fastapi_title="stac-geoparquet-geoparquet",
-            stac_fastapi_description="A stac-fastapi server backend by stac-geoparquet",
-        ),
+        settings=settings,
         client=Client(),
         app=FastAPI(
             lifespan=lifespan,
