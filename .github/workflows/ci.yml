@@ -14,9 +14,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
       - name: Install
-        run: scripts/install --dev
-      - name: Copy env file
-        run: cp .env.local .env
+        run: uv sync
       - name: Lint
         run: scripts/lint
       - name: Test
