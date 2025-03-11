@@ -11,11 +11,11 @@ class Config(BaseSettings):
 
     name: str = "stac-fastapi-geoparquet"
     stage: str = "dev"
-    owner: str = "labs-375"  # Add owner field for tracking
+    owner: str = ""  # Add owner field for tracking
     project: str = "stac-fastapi-geoparquet"  # Add project field for tracking
     release: str = "dev"
 
-    bucket_name: str = "stac-fastapi-geoparquet"
+    bucket_name: str = "stac-fastapi-geoparquet"  # set the bucket name
     geoparquet_key: Annotated[
         Optional[str], "storage key for the geoparquet file within the S3 bucket"
     ] = None

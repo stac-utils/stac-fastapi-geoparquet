@@ -29,7 +29,6 @@ async def test_paging(client: TestClient) -> None:
 
 
 async def test_collection_link(client: TestClient) -> None:
-    # https://github.com/developmentseed/labs-375-stac-geoparquet-backend/issues/58
     response = client.get("/search", params={"limit": 1})
     response.raise_for_status()
     data = response.json()
