@@ -70,7 +70,9 @@ def create_api(settings: Settings | None = None) -> StacApi:
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[State]:
-        client = DuckdbClient()
+        client = DuckdbClient(
+            extension_directory=settings.stac_fastapi_duckdb_extension_directory
+        )
         collections = dict()
         href_dict = dict()
         for href in hrefs:

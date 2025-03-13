@@ -11,6 +11,9 @@ class Settings(ApiSettings):  # type: ignore
     configuration file.
     """
 
+    stac_fastapi_duckdb_extension_directory: str | None = None
+    """DuckDB extension directory (if none, the default will be used)"""
+
 
 class StacFastapiGeoparquetSettings(BaseModel):
     hrefs: list[str]
