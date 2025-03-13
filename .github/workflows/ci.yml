@@ -23,3 +23,20 @@ jobs:
         run: scripts/validate
       - name: Build docs
         run: uv run mkdocs build --strict
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site/
+  deploy-docs:
+    name: Deploy docs
+    needs: lint-and-test
+    if: github.ref == 'ref/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/deploy-pages@v4
+        id: deployment
