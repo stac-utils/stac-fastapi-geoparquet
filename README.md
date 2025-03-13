@@ -1,5 +1,9 @@
 # stac-fastapi-geoparquet
 
+[![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/stac-utils/stac-fastapi-geoparquet/ci.yml?style=for-the-badge)](https://github.com/stac-utils/stac-fastapi-geoparquet/actions/workflows/ci.yml)
+[![PyPI - Version](https://img.shields.io/pypi/v/stac-fastapi-geoparquet?style=for-the-badge)](https://pypi.org/project/stac-fastapi-geoparquet/)
+[![GitHub License](https://img.shields.io/github/license/stac-utils/stac-fastapi-pgstac?style=for-the-badge)](https://github.com/stac-utils/stac-fastapi-geoparquet/blob/main/LICENSE)
+
 A [stac-fastapi](https://github.com/stac-utils/stac-fastapi) with a [stac-geoparquet](https://github.com/stac-utils/stac-geoparquet/blob/main/spec/stac-geoparquet-spec.md) backend.
 
 **stac-fastapi-geoparquet** can serve a full-featured STAC API from a **stac-geoparquet** file located (e.g.) in blob storage — no database required.
