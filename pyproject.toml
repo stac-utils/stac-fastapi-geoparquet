@@ -56,7 +56,6 @@ deploy = [
     "pydantic>=2.10.4",
     "pydantic-settings>=2.8.0",
 ]
-katas = ["ipykernel>=6.29.5", "pystac-client>=0.8.5"]
 
 [tool.uv]
 default-groups = ["dev", "validate", "deploy"]

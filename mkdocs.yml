@@ -1,7 +1,15 @@
 site_name: stac-fastapi-geoparquet
+site_url: https://stac-utils.github.io/stac-fastapi-geoparquet/
+site_author: Pete Gadomski
 repo_url: https://github.com/stac-utils/stac-fastapi-geoparquet/
 repo_name: stac-utils/stac-fastapi-geoparquet
-site_author: Pete Gadomski
+
+extra:
+  social:
+    - icon: "fontawesome/brands/github"
+      link: "https://github.com/developmentseed"
+    - icon: "fontawesome/brands/linkedin"
+      link: "https://www.linkedin.com/company/development-seed"
 
 theme:
   name: material
@@ -30,3 +38,8 @@ theme:
 
 extra_css:
   - overrides/stylesheets/extra.css
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
