@@ -183,13 +183,14 @@ class Client(AsyncBaseCoreClient):  # type: ignore
 
         search_dict = search.model_dump(exclude_none=True)
         search_dict.update(**kwargs)
-        item_collection = client.search(
+        items = client.search(
             href,
             **search_dict,
         )
-        item_collection["features"] = [
-            self.item_with_links(item, request) for item in item_collection["features"]
-        ]
+        item_collection = {
+            "type": "FeatureCollection",
+            "features": [self.item_with_links(item, request) for item in items],
+        }
         num_items = len(item_collection["features"])
         limit = int(search_dict.get("limit", None) or num_items)
         offset = int(search_dict.get("offset", None) or 0)

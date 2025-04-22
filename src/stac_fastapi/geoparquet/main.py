@@ -1,4 +1,4 @@
-from stac_fastapi.geoparquet import create_api
+import stac_fastapi.geoparquet.api
 
-api = create_api()
+api = stac_fastapi.geoparquet.api.create()
 app = api.app

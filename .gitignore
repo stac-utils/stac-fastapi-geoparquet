@@ -179,3 +179,5 @@ infrastructure/aws/cdk.out/
 infrastructure/aws/.env
 infrastructure/aws/cdk-outputs.json
 infrastructure/aws/cdk.context.json
+
+tests/duckdb-extensions
