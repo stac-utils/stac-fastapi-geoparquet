@@ -10,9 +10,17 @@ jobs:
   lint-and-test:
     name: Lint and test
     runs-on: ubuntu-latest
+    env:
+      DUCKDB_LIB_DIR: /opt/duckdb
+      LD_LIBRARY_PATH: /opt/duckdb
     steps:
       - uses: actions/checkout@v4
+      - uses: Swatinem/rust-cache@v2
       - uses: astral-sh/setup-uv@v5
+      - name: Get DuckDB
+        run: |
+          wget https://github.com/duckdb/duckdb/releases/download/v1.2.2/libduckdb-linux-amd64.zip
+          unzip libduckdb-linux-amd64.zip -d /opt/duckdb
       - name: Install
         run: uv sync --all-extras
       - name: Lint
