@@ -9,10 +9,10 @@ dependencies = [
     "fastapi>=0.115.8",
     "geojson-pydantic>=1.2.0",
     "pydantic>=2.10.4",
+    "rustac",
     "stac-fastapi-api>=5.0.2",
     "stac-fastapi-extensions>=5.0.2",
     "stac-fastapi-types>=5.0.2",
-    "rustac==0.6.0",
 ]
 classifiers = [
     "Programming Language :: Python :: 3",
@@ -35,18 +35,14 @@ Changelog = "https://github.com/stac-utils/stac-fastapi-geoparquet/blob/main/CHA
 
 [dependency-groups]
 dev = [
-    "boto3>=1.37.11",
     "fastapi[standard]>=0.115.6",
-    "httpx>=0.28.1",
     "mkdocs-material>=9.6.5",
     "mypy>=1.15.0",
-    "pgstacrs>=0.1.1",
     "pygithub>=2.6.1",
     "pystac[validation]>=1.12.2",
     "pytest>=8.3.4",
     "pytest-asyncio>=0.25.3",
     "ruff>=0.9.7",
-    "stac-api-validator>=0.6.3",
 ]
 validate = ["stac-api-validator>=0.6.3"]
 deploy = [
@@ -58,7 +54,10 @@ deploy = [
 ]
 
 [tool.uv]
-default-groups = ["dev", "validate", "deploy"]
+default-groups = ["dev", "validate"]
+
+[tool.uv.sources]
+rustac = { git = "https://github.com/stac-utils/rustac-py", rev = "22c883178cb799032c0928eeaf82463b38f6bd7a" }
 
 [tool.mypy]
 strict = true
