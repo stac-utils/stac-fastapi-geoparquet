@@ -5,7 +5,7 @@ from typing import Any, cast
 
 from fastapi import HTTPException
 from pydantic import ValidationError
-from stacrs import DuckdbClient
+from rustac import DuckdbClient
 from starlette.requests import Request
 
 from stac_fastapi.api.models import BaseSearchPostRequest

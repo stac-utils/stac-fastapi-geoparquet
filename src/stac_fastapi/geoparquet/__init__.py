@@ -4,7 +4,7 @@ from typing import Any, AsyncIterator, TypedDict
 
 import tomllib
 from fastapi import FastAPI
-from stacrs import DuckdbClient
+from rustac import DuckdbClient
 
 import stac_fastapi.api.models
 from stac_fastapi.api.app import StacApi

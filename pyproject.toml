@@ -12,7 +12,7 @@ dependencies = [
     "stac-fastapi-api>=5.0.2",
     "stac-fastapi-extensions>=5.0.2",
     "stac-fastapi-types>=5.0.2",
-    "stacrs==0.6.0-beta.0",
+    "rustac==0.6.0",
 ]
 classifiers = [
     "Programming Language :: Python :: 3",
@@ -76,6 +76,7 @@ asyncio_default_fixture_loop_scope = "function"
 filterwarnings = [
     "error",
     'ignore:datetime.datetime.utcfromtimestamp\(\) is deprecated and scheduled for removal in a future version.:DeprecationWarning',
+    "ignore:Using extra keyword arguments on `Field` is deprecated and will be removed.:pydantic.warnings.PydanticDeprecatedSince20",
 ]
 
 [tool.ruff.lint]
