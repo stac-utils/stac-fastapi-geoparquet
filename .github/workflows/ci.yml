@@ -26,7 +26,7 @@ jobs:
       - name: Lint
         run: scripts/lint
       - name: Test
-        run: uv run pytest
+        run: scripts/test
       - name: Validate
         run: scripts/validate
       - name: Build docs

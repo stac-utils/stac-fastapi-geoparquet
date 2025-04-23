@@ -57,7 +57,7 @@ deploy = [
 default-groups = ["dev", "validate"]
 
 [tool.uv.sources]
-rustac = { git = "https://github.com/stac-utils/rustac-py", rev = "22c883178cb799032c0928eeaf82463b38f6bd7a" }
+rustac = { git = "https://github.com/stac-utils/rustac-py", rev = "18fc7bacdb9f33bc657c03f2f6f1287651a09c05" }
 
 [tool.mypy]
 strict = true
