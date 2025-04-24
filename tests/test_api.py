@@ -7,7 +7,7 @@ from rustac import DuckdbClient
 import stac_fastapi.geoparquet.api
 from stac_fastapi.geoparquet import Settings
 
-from .conftest import GEOPARQUET_FILE
+from .conftest import COLLECTIONS_PATH
 
 
 @pytest.fixture
@@ -17,7 +17,7 @@ def extension_directory() -> Path:
 
 def test_create(extension_directory: Path) -> None:
     duckdb_client = DuckdbClient(extension_directory=str(extension_directory))
-    settings = Settings(stac_fastapi_geoparquet_href=str(GEOPARQUET_FILE))
+    settings = Settings(stac_fastapi_collections_href=str(COLLECTIONS_PATH))
     api = stac_fastapi.geoparquet.api.create(
         duckdb_client=duckdb_client, settings=settings
     )

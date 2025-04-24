@@ -1718,18 +1718,7 @@ wheels = [
 [[package]]
 name = "rustac"
 version = "0.7.0b1"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/c2/36/300fd6f5dd9e4d804f08aa235f23dc348f44355fed61452f61df38e0ca31/rustac-0.7.0b1.tar.gz", hash = "sha256:db73b350f220b4caec27cdfccb073d869f2c156f7a5d38af2c104824108f43d3", size = 377514, upload_time = "2025-04-24T12:07:31.609Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/c2/d2/50c35304f1506f4d766646908d2cb74992779d7f7a84239a7e5bdbcdd023/rustac-0.7.0b1-cp310-cp310-macosx_10_12_x86_64.whl", hash = "sha256:d1406eba3ea842fcba177ff18cbcdd5206357fabb2285d9f6be42ace07aa0578", size = 20851651, upload_time = "2025-04-24T12:07:27.33Z" },
-    { url = "https://files.pythonhosted.org/packages/c1/8a/684dd0c3ce727cebfbf221ecbd621e58989a13c620a1c1f8f374cc9656c9/rustac-0.7.0b1-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:db9930cffe8694cb9366f4c46a70d4342e52dcb909d3fa653488e0a171ef4953", size = 18991796, upload_time = "2025-04-24T12:07:22.082Z" },
-    { url = "https://files.pythonhosted.org/packages/8e/04/8368146df9b23d803c8ceb9f4599040d92f578e061bd12b82ef1f011532f/rustac-0.7.0b1-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:680a6c853adacc39eaedd5aff21d63061f29bff1fa09df132d71df63330df123", size = 22919545, upload_time = "2025-04-24T12:07:17.336Z" },
-    { url = "https://files.pythonhosted.org/packages/d1/1b/90160873948d8c443b376449a1d590c3ed17fe3ce980e66dc273325e56fb/rustac-0.7.0b1-cp310-cp310-manylinux_2_28_aarch64.whl", hash = "sha256:e09fdfe77324379c6ebf159a2ac7543b8cb692f2ebcc2db37f9abd45df94f8d8", size = 20769458, upload_time = "2025-04-24T12:07:12.071Z" },
-    { url = "https://files.pythonhosted.org/packages/7b/68/6b259935a2841ed091262373abab046ed789046012f2669439639e1d65b7/rustac-0.7.0b1-cp311-abi3-macosx_10_12_x86_64.whl", hash = "sha256:c5abeff6307beef5e31f241dafb04c282a6b264251dfe76371bdd75acdde0994", size = 20840124, upload_time = "2025-04-24T12:07:29.826Z" },
-    { url = "https://files.pythonhosted.org/packages/3e/0a/f52adb6ced47b56dd8c366c945e677895879790e4d3ccdb84f405f57dee3/rustac-0.7.0b1-cp311-abi3-macosx_11_0_arm64.whl", hash = "sha256:74a45ac4aaf204d615fa152c76974c12d1cb3638dfc80ff0317e0c3e7096e6da", size = 18981627, upload_time = "2025-04-24T12:07:24.735Z" },
-    { url = "https://files.pythonhosted.org/packages/64/46/1281a71d3c5b4107263b8bdd0d87bcc8ed358d96f0fdfebd14440d30fffb/rustac-0.7.0b1-cp311-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:a1a3f807b9ddc7763fea910397f78dbd23f9bcae4b3fa84cc827b39d1c0be15d", size = 22943387, upload_time = "2025-04-24T12:07:19.623Z" },
-    { url = "https://files.pythonhosted.org/packages/82/84/bff7f6bcba475d430ed31877e4298b06cb74fc870cae0aed662604945370/rustac-0.7.0b1-cp311-abi3-manylinux_2_28_aarch64.whl", hash = "sha256:2f72921a39d706e6762a43f4d023b25086a66dcfe4710ef6bbf4a2ba709194bc", size = 20767467, upload_time = "2025-04-24T12:07:15.091Z" },
-]
+source = { git = "https://github.com/stac-utils/rustac-py#89f92e4829a5b78b8bb7418c10e0e204c713accf" }
 
 [[package]]
 name = "shapely"
@@ -1927,7 +1916,7 @@ requires-dist = [
     { name = "geojson-pydantic", specifier = ">=1.2.0" },
     { name = "mangum", marker = "extra == 'lambda'", specifier = "==0.19.0" },
     { name = "pydantic", specifier = ">=2.10.4" },
-    { name = "rustac", specifier = "==0.7.0b1" },
+    { name = "rustac", git = "https://github.com/stac-utils/rustac-py" },
     { name = "stac-fastapi-api", specifier = ">=5.0.2" },
     { name = "stac-fastapi-extensions", specifier = ">=5.0.2" },
     { name = "stac-fastapi-types", specifier = ">=5.0.2" },

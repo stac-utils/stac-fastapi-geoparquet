@@ -1,9 +1,10 @@
+import json
+from collections import defaultdict
 from contextlib import asynccontextmanager
-from pathlib import Path
 from typing import Any, AsyncIterator, TypedDict
 
-import tomllib
-from fastapi import FastAPI
+import pystac.utils
+from fastapi import FastAPI, HTTPException
 from rustac import DuckdbClient
 
 import stac_fastapi.api.models
@@ -12,7 +13,9 @@ from stac_fastapi.extensions.core.pagination import OffsetPaginationExtension
 
 from .client import Client
 from .search import SearchGetRequest, SearchPostRequest
-from .settings import Settings, StacFastapiGeoparquetSettings
+from .settings import Settings
+
+GEOPARQUET_MEDIA_TYPE = "application/vnd.apache.parquet"
 
 GetSearchRequestModel = stac_fastapi.api.models.create_request_model(
     model_name="SearchGetRequest",
@@ -40,7 +43,7 @@ class State(TypedDict):
     collections: dict[str, dict[str, Any]]
     """A mapping of collection id to collection."""
 
-    hrefs: dict[str, str]
+    hrefs: dict[str, list[str]]
     """A mapping of collection id to geoparquet href."""
 
 
@@ -57,41 +60,36 @@ def create(
             stac_fastapi_description="A stac-fastapi server backend by stac-geoparquet",
         )
 
-    if settings.stac_fastapi_geoparquet_href.endswith(".toml"):
-        with open(settings.stac_fastapi_geoparquet_href, "rb") as f:
-            data = tomllib.load(f)
-        stac_fastapi_geoparquet_settings = StacFastapiGeoparquetSettings.model_validate(
-            data
-        )
-        config_directory = Path(settings.stac_fastapi_geoparquet_href).parent
-        hrefs = []
-        for href in stac_fastapi_geoparquet_settings.hrefs:
-            if Path(href).is_absolute():
-                hrefs.append(href)
-            else:
-                hrefs.append(str(config_directory.joinpath(href).resolve()))
-    else:
-        hrefs = [settings.stac_fastapi_geoparquet_href]
+    with open(settings.stac_fastapi_collections_href, "rb") as f:
+        collections = json.load(f)
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[State]:
         client = app.extra["duckdb_client"]
-        collections = dict()
-        href_dict = dict()
-        for href in hrefs:
-            for collection in client.get_collections(href):
-                if collection["id"] in collections:
-                    raise ValueError(
-                        "cannot have two items in the same collection in different "
-                        "geoparquet files"
+        settings: Settings = app.extra["settings"]
+        collections = app.extra["collections"]
+        collection_dict = dict()
+        hrefs = defaultdict(list)
+        for collection in collections:
+            if collection["id"] in collection_dict:
+                raise HTTPException(
+                    500, f"two collections with the same id: {collection.id}"
+                )
+            else:
+                collection_dict[collection["id"]] = collection
+            for key, asset in collection["assets"].items():
+                if asset["type"] == GEOPARQUET_MEDIA_TYPE:
+                    hrefs[collection["id"]].append(
+                        pystac.utils.make_absolute_href(
+                            asset["href"],
+                            settings.stac_fastapi_collections_href,
+                            start_is_dir=False,
+                        )
                     )
-                else:
-                    collections[collection["id"]] = collection
-                href_dict[collection["id"]] = href
         yield {
             "client": client,
-            "collections": collections,
-            "hrefs": href_dict,
+            "collections": collection_dict,
+            "hrefs": hrefs,
         }
 
     api = StacApi(
@@ -102,6 +100,8 @@ def create(
             openapi_url=settings.openapi_url,
             docs_url=settings.docs_url,
             redoc_url=settings.docs_url,
+            settings=settings,
+            collections=collections,
             duckdb_client=duckdb_client,
         ),
         search_get_request_model=GetSearchRequestModel,

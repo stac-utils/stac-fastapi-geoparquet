@@ -162,15 +162,16 @@ class Client(AsyncBaseCoreClient):  # type: ignore
         **kwargs: Any,
     ) -> ItemCollection:
         client = cast(DuckdbClient, request.state.client)
-        hrefs = cast(dict[str, str], request.state.hrefs)
+        hrefs = cast(dict[str, list[str]], request.state.hrefs)
 
-        hrefs_to_search = set()
+        hrefs_to_search = []
         if search.collections:
             for collection in search.collections:
-                if href := hrefs.get(collection):
-                    hrefs_to_search.add(href)
+                if collection_hrefs := hrefs.get(collection):
+                    hrefs_to_search.extend(collection_hrefs)
         else:
-            hrefs_to_search.update(hrefs.values())
+            for collection_hrefs in hrefs.values():
+                hrefs_to_search.extend(collection_hrefs)
 
         if len(hrefs) > 1:
             raise ValidationError(
