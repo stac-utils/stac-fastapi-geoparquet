@@ -22,7 +22,11 @@ async def test_paging(client: TestClient) -> None:
         (link for link in response.json()["links"] if link["rel"] == "next")
     )
     url = urllib.parse.urlparse(next_link["href"])
-    assert urllib.parse.parse_qs(url.query) == {"limit": ["1"], "offset": ["1"]}
+    assert urllib.parse.parse_qs(url.query) == {
+        "limit": ["1"],
+        "offset": ["1"],
+        "collections": ["naip,openaerialmap"],
+    }
     response = client.get("/search", params=url.query)
     assert response.status_code == 200
     assert response.json()["features"][0]["id"] == "ne_m_4110263_sw_13_060_20220820"

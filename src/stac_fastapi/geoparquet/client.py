@@ -164,42 +164,38 @@ class Client(AsyncBaseCoreClient):  # type: ignore
         client = cast(DuckdbClient, request.state.client)
         hrefs = cast(dict[str, list[str]], request.state.hrefs)
 
-        hrefs_to_search = []
         if search.collections:
-            for collection in search.collections:
-                if collection_hrefs := hrefs.get(collection):
-                    hrefs_to_search.extend(collection_hrefs)
+            collections = search.collections
         else:
-            for collection_hrefs in hrefs.values():
-                hrefs_to_search.extend(collection_hrefs)
-
-        if len(hrefs) > 1:
-            raise ValidationError(
-                "Cannot search multiple geoparquet files (don't know how to page)"
-            )
-        elif len(hrefs) == 0:
-            return ItemCollection()
-        else:
-            href = hrefs_to_search.pop()
+            collections = list(hrefs.keys())
 
         search_dict = search.model_dump(exclude_none=True)
-        search_dict.update(**kwargs)
-        items = client.search(
-            href,
-            **search_dict,
-        )
+        search_dict["offset"] = kwargs.get("offset", 0)
+        items = []
+        while collections and not (search.limit and len(items) >= search.limit):
+            collection = collections.pop(0)
+            if collection_hrefs := hrefs.get(collection):
+                collection_search_dict = copy.deepcopy(search_dict)
+                collection_search_dict["collections"] = [collection]
+                for href in collection_hrefs:
+                    items.extend(client.search(href, **collection_search_dict))
+                    if search.limit and len(items) >= search.limit:
+                        collections.insert(0, collection)
+                        break
+                search_dict["offset"] = 0
+
         item_collection = {
             "type": "FeatureCollection",
             "features": [self.item_with_links(item, request) for item in items],
         }
         num_items = len(item_collection["features"])
-        limit = int(search_dict.get("limit", None) or num_items)
         offset = int(search_dict.get("offset", None) or 0)
 
-        if limit <= num_items:
+        if search.limit and search.limit <= num_items:
             next_search = copy.deepcopy(search_dict)
-            next_search["limit"] = limit
-            next_search["offset"] = offset + limit
+            next_search["limit"] = search.limit
+            next_search["offset"] = offset + search.limit
+            next_search["collections"] = collections
         else:
             next_search = None
 
@@ -220,6 +216,8 @@ class Client(AsyncBaseCoreClient):  # type: ignore
                 }
             )
             if next_search:
+                if "collections" in next_search:
+                    next_search["collections"] = ",".join(collections)
                 links.append(
                     {
                         "href": url + "?" + urllib.parse.urlencode(next_search),
