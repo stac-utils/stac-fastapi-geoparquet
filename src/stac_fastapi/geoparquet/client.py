@@ -171,7 +171,7 @@ class Client(AsyncBaseCoreClient):  # type: ignore
 
         search_dict = search.model_dump(exclude_none=True)
         search_dict["offset"] = kwargs.get("offset", 0)
-        items = []
+        items: list[dict[str, Any]] = []
         while collections and not (search.limit and len(items) >= search.limit):
             collection = collections.pop(0)
             if collection_hrefs := hrefs.get(collection):
