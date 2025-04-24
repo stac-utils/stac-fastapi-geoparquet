@@ -9,7 +9,7 @@ dependencies = [
     "fastapi>=0.115.8",
     "geojson-pydantic>=1.2.0",
     "pydantic>=2.10.4",
-    "rustac",
+    "rustac==0.7.0b1",
     "stac-fastapi-api>=5.0.2",
     "stac-fastapi-extensions>=5.0.2",
     "stac-fastapi-types>=5.0.2",
@@ -46,7 +46,7 @@ dev = [
 ]
 validate = ["stac-api-validator>=0.6.3"]
 deploy = [
-    "aws-cdk-lib==2.130.0",
+    "aws-cdk-lib>=2.130.0",
     "constructs>=10.3.0",
     "eoapi-cdk>=8.0.2",
     "pydantic>=2.10.4",
@@ -55,9 +55,6 @@ deploy = [
 
 [tool.uv]
 default-groups = ["dev", "validate"]
-
-[tool.uv.sources]
-rustac = { git = "https://github.com/stac-utils/rustac-py", rev = "18fc7bacdb9f33bc657c03f2f6f1287651a09c05" }
 
 [tool.mypy]
 strict = true
