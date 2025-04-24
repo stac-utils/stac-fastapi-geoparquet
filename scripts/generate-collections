@@ -1,0 +1,41 @@
+#!/usr/bin/env python3
+
+import asyncio
+import json
+import sys
+from pathlib import Path
+
+import pystac.client
+import pystac.utils
+import rustac
+
+OUTPUT_PATH = Path(__file__).parents[1] / "data" / "collections.json"
+
+
+async def main() -> None:
+    if len(sys.argv) == 1:
+        raise Exception("ERROR: must provide at least one href on the command line")
+
+    collections = []
+    for href in sys.argv[1:]:
+        items = await rustac.read(href)
+        collection = rustac.collection_from_id_and_items(
+            Path(href).stem, items["features"]
+        )
+        collection["links"] = []
+        collection["assets"] = {
+            "data": {
+                "href": pystac.utils.make_relative_href(
+                    str(Path(href).absolute()), OUTPUT_PATH
+                ),
+                "type": "application/vnd.apache.parquet",
+            }
+        }
+        collections.append(collection)
+
+    with open(OUTPUT_PATH, "w") as f:
+        json.dump(collections, f, indent=2)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
