@@ -2,4 +2,4 @@
 
 set -e
 
-STAC_FASTAPI_GEOPARQUET_HREF=data/naip.parquet uv run fastapi dev src/stac_fastapi/geoparquet/main.py
+STAC_FASTAPI_COLLECTIONS_HREF=data/collections.json uv run fastapi dev src/stac_fastapi/geoparquet/main.py
