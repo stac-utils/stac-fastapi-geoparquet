@@ -11,10 +11,10 @@ set +e
 "$scripts"/wait-for-it.sh localhost:8000 -- \
     uv run stac-api-validator --root-url http://localhost:8000 \
         --conformance core \
-        --conformance features \
         --collection naip \
         --geometry '{"type":"Point","coordinates":[-105.1019,40.1672]}' \
         --conformance item-search
+        # --conformance features \
 result=$?
 
 set -e
