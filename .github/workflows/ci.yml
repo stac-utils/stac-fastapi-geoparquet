@@ -25,12 +25,6 @@ jobs:
       - uses: astral-sh/setup-uv@v5
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Get DuckDB
-        run: |
-          wget https://github.com/duckdb/duckdb/releases/download/v1.2.2/libduckdb-linux-amd64.zip
-          unzip libduckdb-linux-amd64.zip -d /opt/duckdb
-      - name: Install
-        run: uv sync --all-extras
       - name: Lint
         run: scripts/lint
       - name: Test
