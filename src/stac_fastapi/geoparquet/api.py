@@ -1,8 +1,11 @@
 import json
+import urllib.parse
 from collections import defaultdict
 from contextlib import asynccontextmanager
+from pathlib import Path
 from typing import Any, AsyncIterator, TypedDict
 
+import obstore.store
 import pystac.utils
 from fastapi import FastAPI, HTTPException
 from rustac import Collection, DuckdbClient
@@ -91,8 +94,16 @@ def create(
         )
 
     if settings.stac_fastapi_collections_href:
-        with open(settings.stac_fastapi_collections_href, "rb") as f:
-            collections = json.load(f)
+        if urllib.parse.urlparse(settings.stac_fastapi_collections_href).scheme:
+            href = settings.stac_fastapi_collections_href
+        else:
+            href = "file://" + str(
+                Path(settings.stac_fastapi_collections_href).absolute()
+            )
+        prefix, file_name = href.rsplit("/", 1)
+        store = obstore.store.from_url(prefix)
+        result = store.get(file_name)
+        collections = json.loads(bytes(result.bytes()))
     else:
         collections = []
 
