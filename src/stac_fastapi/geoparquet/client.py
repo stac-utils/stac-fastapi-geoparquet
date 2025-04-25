@@ -14,6 +14,8 @@ from stac_fastapi.types.errors import NotFoundError
 from stac_fastapi.types.rfc3339 import DateTimeType
 from stac_fastapi.types.stac import BBox, Collection, Collections, Item, ItemCollection
 
+DEFAULT_LIMIT = 10_000
+
 
 class Client(AsyncBaseCoreClient):  # type: ignore
     """A stac-fastapi-geoparquet client."""
@@ -170,31 +172,46 @@ class Client(AsyncBaseCoreClient):  # type: ignore
             collections = list(hrefs.keys())
 
         search_dict = search.model_dump(exclude_none=True)
-        search_dict["offset"] = kwargs.get("offset", 0)
+        limit = search_dict.pop("limit", DEFAULT_LIMIT)
+        offset = kwargs.get("offset", 0)
+
         items: list[dict[str, Any]] = []
-        while collections and not (search.limit and len(items) >= search.limit):
+        while collections:
             collection = collections.pop(0)
             if collection_hrefs := hrefs.get(collection):
+                # TODO allow multiple hrefs per collection
+                if len(collection_hrefs) > 1:
+                    raise HTTPException(
+                        500, "cannot search more than one file per collection, for now"
+                    )
+
                 collection_search_dict = copy.deepcopy(search_dict)
-                collection_search_dict["collections"] = [collection]
-                for href in collection_hrefs:
-                    items.extend(client.search(href, **collection_search_dict))
-                    if search.limit and len(items) >= search.limit:
-                        collections.insert(0, collection)
-                        break
-                search_dict["offset"] = 0
+                collection_search_dict["collections"] = []
+                collection_search_dict["limit"] = limit
+                if offset:
+                    collection_search_dict["offset"] = offset
+                collection_items = client.search(
+                    collection_hrefs[0], **collection_search_dict
+                )
+                items.extend(collection_items)
+                if len(items) >= limit:
+                    collections.insert(0, collection)
+                    offset = (offset or 0) + len(collection_items)
+                    break
+                else:
+                    limit = limit - len(collection_items)
+                    offset = 0
 
         item_collection = {
             "type": "FeatureCollection",
             "features": [self.item_with_links(item, request) for item in items],
         }
         num_items = len(item_collection["features"])
-        offset = int(search_dict.get("offset", None) or 0)
 
-        if search.limit and search.limit <= num_items:
+        if collections and ((search.limit or DEFAULT_LIMIT) <= num_items):
             next_search = copy.deepcopy(search_dict)
-            next_search["limit"] = search.limit
-            next_search["offset"] = offset + search.limit
+            next_search["limit"] = search.limit or DEFAULT_LIMIT
+            next_search["offset"] = offset
             next_search["collections"] = collections
         else:
             next_search = None

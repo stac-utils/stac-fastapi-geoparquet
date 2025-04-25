@@ -25,7 +25,7 @@ async def test_paging(client: TestClient) -> None:
     assert urllib.parse.parse_qs(url.query) == {
         "limit": ["1"],
         "offset": ["1"],
-        "collections": ["naip,openaerialmap"],
+        "collections": ["naip-10,naip,openaerialmap"],
     }
     response = client.get("/search", params=url.query)
     assert response.status_code == 200
@@ -42,3 +42,35 @@ async def test_collection_link(client: TestClient) -> None:
     assert link["href"].startswith(str(client.base_url)), (
         link["href"] + " does not start with the test client base url"
     )
+
+
+async def test_limit_offset_multiple_collections(client: TestClient) -> None:
+    response = client.get(
+        "/search", params={"limit": 11, "collections": ["naip-10,openaerialmap"]}
+    )
+    assert response.status_code == 200
+    next_link = next(link for link in response.json()["links"] if link["rel"] == "next")
+    url = urllib.parse.urlparse(next_link["href"])
+    query_params = urllib.parse.parse_qs(url.query)
+    assert query_params == {
+        "collections": ["openaerialmap"],
+        "limit": ["11"],
+        "offset": ["1"],
+    }
+
+
+async def test_paging_multiple_collections(client: TestClient) -> None:
+    response = client.get(
+        "/search",
+        params={"limit": 5000, "collections": ["naip-10,naip"]},
+    )
+    assert response.status_code == 200
+    while True:
+        if next_link := next(
+            (link for link in response.json()["links"] if link["rel"] == "next"), None
+        ):
+            url = urllib.parse.urlparse(next_link["href"])
+            response = client.get(url.path + "?" + url.query)
+            assert response.status_code == 200
+        else:
+            break
