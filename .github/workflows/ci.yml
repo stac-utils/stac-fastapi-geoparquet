@@ -40,6 +40,7 @@ jobs:
       - name: Build docs
         run: uv run mkdocs build --strict
       - uses: actions/upload-pages-artifact@v3
+        if: ${{ github.ref == 'refs/heads/main' && matrix.python-version == '3.11' }}
         with:
           path: site/
   deploy-docs:
