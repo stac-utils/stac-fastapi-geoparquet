@@ -10,6 +10,12 @@ jobs:
   lint-and-test:
     name: Lint and test
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version:
+          - "3.11"
+          - "3.12"
+          - "3.13"
     env:
       DUCKDB_LIB_DIR: /opt/duckdb
       LD_LIBRARY_PATH: /opt/duckdb
@@ -17,6 +23,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: Swatinem/rust-cache@v2
       - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: ${{ matrix.python-version }}
       - name: Get DuckDB
         run: |
           wget https://github.com/duckdb/duckdb/releases/download/v1.2.2/libduckdb-linux-amd64.zip
@@ -32,6 +40,7 @@ jobs:
       - name: Build docs
         run: uv run mkdocs build --strict
       - uses: actions/upload-pages-artifact@v3
+        if: ${{ github.ref == 'refs/heads/main' && matrix.python-version == '3.11' }}
         with:
           path: site/
   deploy-docs:
