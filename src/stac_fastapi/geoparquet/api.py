@@ -5,7 +5,7 @@ from typing import Any, AsyncIterator, TypedDict
 
 import pystac.utils
 from fastapi import FastAPI, HTTPException
-from rustac import DuckdbClient
+from rustac import Collection, DuckdbClient
 
 import stac_fastapi.api.models
 from stac_fastapi.api.app import StacApi
@@ -47,6 +47,36 @@ class State(TypedDict):
     """A mapping of collection id to geoparquet href."""
 
 
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncIterator[State]:
+    client = app.extra["duckdb_client"]
+    settings: Settings = app.extra["settings"]
+    collections = app.extra["collections"]
+    collection_dict = dict()
+    hrefs = defaultdict(list)
+    for collection in collections:
+        if collection["id"] in collection_dict:
+            raise HTTPException(
+                500, f"two collections with the same id: {collection.id}"
+            )
+        else:
+            collection_dict[collection["id"]] = collection
+        for key, asset in collection["assets"].items():
+            if asset.get("type") == GEOPARQUET_MEDIA_TYPE:
+                hrefs[collection["id"]].append(
+                    pystac.utils.make_absolute_href(
+                        asset["href"],
+                        settings.stac_fastapi_collections_href,
+                        start_is_dir=False,
+                    )
+                )
+    yield {
+        "client": client,
+        "collections": collection_dict,
+        "hrefs": hrefs,
+    }
+
+
 def create(
     settings: Settings | None = None,
     duckdb_client: DuckdbClient | None = None,
@@ -60,37 +90,19 @@ def create(
             stac_fastapi_description="A stac-fastapi server backend by stac-geoparquet",
         )
 
-    with open(settings.stac_fastapi_collections_href, "rb") as f:
-        collections = json.load(f)
+    if settings.stac_fastapi_collections_href:
+        with open(settings.stac_fastapi_collections_href, "rb") as f:
+            collections = json.load(f)
+    else:
+        collections = []
 
-    @asynccontextmanager
-    async def lifespan(app: FastAPI) -> AsyncIterator[State]:
-        client = app.extra["duckdb_client"]
-        settings: Settings = app.extra["settings"]
-        collections = app.extra["collections"]
-        collection_dict = dict()
-        hrefs = defaultdict(list)
-        for collection in collections:
-            if collection["id"] in collection_dict:
-                raise HTTPException(
-                    500, f"two collections with the same id: {collection.id}"
-                )
-            else:
-                collection_dict[collection["id"]] = collection
-            for key, asset in collection["assets"].items():
-                if asset["type"] == GEOPARQUET_MEDIA_TYPE:
-                    hrefs[collection["id"]].append(
-                        pystac.utils.make_absolute_href(
-                            asset["href"],
-                            settings.stac_fastapi_collections_href,
-                            start_is_dir=False,
-                        )
-                    )
-        yield {
-            "client": client,
-            "collections": collection_dict,
-            "hrefs": hrefs,
-        }
+    if settings.stac_fastapi_geoparquet_href:
+        collections.extend(
+            collections_from_geoparquet_href(
+                settings.stac_fastapi_geoparquet_href,
+                duckdb_client,
+            )
+        )
 
     api = StacApi(
         settings=settings,
@@ -108,3 +120,13 @@ def create(
         search_post_request_model=PostSearchRequestModel,
     )
     return api
+
+
+def collections_from_geoparquet_href(
+    href: str, duckdb_client: DuckdbClient
+) -> list[Collection]:
+    collections = duckdb_client.get_collections(href)
+    for collection in collections:
+        collection["links"] = []
+        collection["assets"] = {"data": {"href": href, "type": GEOPARQUET_MEDIA_TYPE}}
+    return collections

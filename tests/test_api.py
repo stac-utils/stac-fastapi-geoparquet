@@ -7,7 +7,7 @@ from rustac import DuckdbClient
 import stac_fastapi.geoparquet.api
 from stac_fastapi.geoparquet import Settings
 
-from .conftest import COLLECTIONS_PATH
+from .conftest import COLLECTIONS_PATH, NAIP_PATH
 
 
 @pytest.fixture
@@ -21,6 +21,14 @@ def test_create(extension_directory: Path) -> None:
     api = stac_fastapi.geoparquet.api.create(
         duckdb_client=duckdb_client, settings=settings
     )
+    with TestClient(api.app) as client:
+        response = client.get("/search")
+        assert response.status_code == 200
+
+
+def test_create_from_parquet_file() -> None:
+    settings = Settings(stac_fastapi_geoparquet_href=str(NAIP_PATH))
+    api = stac_fastapi.geoparquet.api.create(settings=settings)
     with TestClient(api.app) as client:
         response = client.get("/search")
         assert response.status_code == 200

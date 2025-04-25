@@ -8,6 +8,7 @@ import stac_fastapi.geoparquet.api
 from stac_fastapi.geoparquet import Settings
 
 COLLECTIONS_PATH = Path(__file__).parents[1] / "data" / "collections.json"
+NAIP_PATH = Path(__file__).parents[1] / "data" / "naip.parquet"
 
 
 @pytest.fixture
