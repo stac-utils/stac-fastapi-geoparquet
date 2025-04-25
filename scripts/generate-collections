@@ -5,7 +5,6 @@ import json
 import sys
 from pathlib import Path
 
-import pystac.client
 import pystac.utils
 import rustac
 
