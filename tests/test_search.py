@@ -25,7 +25,7 @@ def test_paging(client: TestClient) -> None:
     assert urllib.parse.parse_qs(url.query) == {
         "limit": ["1"],
         "offset": ["1"],
-        "collections": ["naip,openaerialmap"],
+        "collections": ["naip,naip-10,openaerialmap-10,openaerialmap"],
     }
     response = client.get("/search", params=url.query)
     assert response.status_code == 200
