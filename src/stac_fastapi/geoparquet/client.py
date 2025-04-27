@@ -14,8 +14,10 @@ from stac_fastapi.types.errors import NotFoundError
 from stac_fastapi.types.rfc3339 import DateTimeType
 from stac_fastapi.types.stac import BBox, Collection, Collections, Item, ItemCollection
 
+DEFAULT_LIMIT = 10_000
 
-class Client(BaseCoreClient):  # type: ignore
+
+class Client(BaseCoreClient):  # type: ignore[misc]
     """A stac-fastapi-geoparquet client."""
 
     def all_collections(self, *, request: Request, **kwargs: Any) -> Collections:
@@ -69,7 +71,7 @@ class Client(BaseCoreClient):  # type: ignore
         request: Request,
         collections: list[str] | None = None,
         ids: list[str] | None = None,
-        bbox: BBox | None = None,
+        bbox: BBox | str | None = None,
         intersects: str | None = None,
         datetime: DateTimeType | None = None,
         limit: int | None = 10,
@@ -81,22 +83,15 @@ class Client(BaseCoreClient):  # type: ignore
         else:
             maybe_intersects = None
 
-        if datetime:
-            if isinstance(datetime, tuple):
-                assert len(datetime) == 2
-                if datetime[0]:
-                    maybe_datetime = datetime[0].isoformat()
-                else:
-                    maybe_datetime = ".."
-                maybe_datetime += "/"
-                if datetime[1]:
-                    maybe_datetime += datetime[1].isoformat()
-                else:
-                    maybe_datetime += ".."
-            else:
-                maybe_datetime = datetime.isoformat()
-        else:
-            maybe_datetime = None
+        if isinstance(bbox, str):
+            if bbox.startswith("["):
+                bbox = bbox[1:]
+            if bbox.endswith("]"):
+                bbox = bbox[:-1]
+            try:
+                bbox = [float(s) for s in bbox.split(",")]
+            except ValueError as e:
+                raise HTTPException(400, f"invalid bbox: {e}")
 
         try:
             search = BaseSearchPostRequest(
@@ -104,7 +99,7 @@ class Client(BaseCoreClient):  # type: ignore
                 ids=ids,
                 bbox=bbox,
                 intersects=maybe_intersects,
-                datetime=maybe_datetime,
+                datetime=datetime,
                 limit=limit,
             )
         except ValidationError as e:
@@ -162,7 +157,7 @@ class Client(BaseCoreClient):  # type: ignore
         **kwargs: Any,
     ) -> ItemCollection:
         client = cast(DuckdbClient, request.state.client)
-        hrefs = cast(dict[str, list[str]], request.state.hrefs)
+        hrefs = cast(dict[str, str], request.state.hrefs)
 
         if search.collections:
             collections = search.collections
@@ -170,31 +165,45 @@ class Client(BaseCoreClient):  # type: ignore
             collections = list(hrefs.keys())
 
         search_dict = search.model_dump(exclude_none=True)
-        search_dict["offset"] = kwargs.get("offset", 0)
+        search_dict.update(**kwargs)
+
+        limit = search_dict.get("limit", DEFAULT_LIMIT)
+        offset = search_dict.get("offset", 0) or 0
         items: list[dict[str, Any]] = []
-        while collections and not (search.limit and len(items) >= search.limit):
+        while collections:
             collection = collections.pop(0)
-            if collection_hrefs := hrefs.get(collection):
+            if href := hrefs.get(collection):
                 collection_search_dict = copy.deepcopy(search_dict)
-                collection_search_dict["collections"] = [collection]
-                for href in collection_hrefs:
-                    items.extend(client.search(href, **collection_search_dict))
-                    if search.limit and len(items) >= search.limit:
-                        collections.insert(0, collection)
-                        break
-                search_dict["offset"] = 0
+                collection_search_dict.update(
+                    {
+                        "collections": [],
+                        "limit": limit,
+                        "offset": offset,
+                    }
+                )
+                collection_items = client.search(href, **collection_search_dict)
+                for item in collection_items:
+                    # Careful ... we aren't updating `collection_items` with the
+                    # correct links.
+                    items.append(self.item_with_links(item, request, collection))
+                if len(items) >= limit:
+                    collections.insert(0, collection)
+                    offset = offset + len(collection_items)
+                    break
+                else:
+                    limit = limit - len(collection_items)
+                    offset = 0
 
         item_collection = {
             "type": "FeatureCollection",
-            "features": [self.item_with_links(item, request) for item in items],
+            "features": items,
         }
         num_items = len(item_collection["features"])
-        offset = int(search_dict.get("offset", None) or 0)
 
-        if search.limit and search.limit <= num_items:
+        if collections and ((search.limit or DEFAULT_LIMIT) <= num_items):
             next_search = copy.deepcopy(search_dict)
-            next_search["limit"] = search.limit
-            next_search["offset"] = offset + search.limit
+            next_search["limit"] = search.limit or DEFAULT_LIMIT
+            next_search["offset"] = offset
             next_search["collections"] = collections
         else:
             next_search = None
@@ -250,7 +259,9 @@ class Client(BaseCoreClient):  # type: ignore
         item_collection["links"] = links
         return ItemCollection(**item_collection)
 
-    def item_with_links(self, item: dict[str, Any], request: Request) -> dict[str, Any]:
+    def item_with_links(
+        self, item: dict[str, Any], request: Request, collection: str
+    ) -> dict[str, Any]:
         links = [
             {
                 "href": str(request.url_for("Landing Page")),
@@ -258,26 +269,24 @@ class Client(BaseCoreClient):  # type: ignore
                 "type": "application/json",
             },
         ]
-        if collection_id := item.get("collection"):
-            href = str(request.url_for("Get Collection", collection_id=collection_id))
+        item["collection"] = collection
+        href = str(request.url_for("Get Collection", collection_id=collection))
+        links.append({"href": href, "rel": "collection", "type": "application/json"})
+        links.append({"href": href, "rel": "parent", "type": "application/json"})
+        if item_id := item.get("id"):
             links.append(
-                {"href": href, "rel": "collection", "type": "application/json"}
+                {
+                    "href": str(
+                        request.url_for(
+                            "Get Item",
+                            collection_id=collection,
+                            item_id=item_id,
+                        )
+                    ),
+                    "rel": "self",
+                    "type": "application/geo+json",
+                }
             )
-            links.append({"href": href, "rel": "parent", "type": "application/json"})
-            if item_id := item.get("id"):
-                links.append(
-                    {
-                        "href": str(
-                            request.url_for(
-                                "Get Item",
-                                collection_id=collection_id,
-                                item_id=item_id,
-                            )
-                        ),
-                        "rel": "self",
-                        "type": "application/geo+json",
-                    }
-                )
         for link in item.get("links", []):
             if link["rel"] not in ("root", "parent", "collection", "self"):
                 links.append(link)

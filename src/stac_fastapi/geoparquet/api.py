@@ -1,6 +1,5 @@
 import json
 import urllib.parse
-from collections import defaultdict
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any, AsyncIterator, TypedDict
@@ -13,22 +12,23 @@ from rustac import Collection, DuckdbClient
 import stac_fastapi.api.models
 from stac_fastapi.api.app import StacApi
 from stac_fastapi.extensions.core.pagination import OffsetPaginationExtension
+from stac_fastapi.types.search import BaseSearchPostRequest
 
 from .client import Client
-from .search import SearchGetRequest, SearchPostRequest
+from .search import FixedSearchGetRequest
 from .settings import Settings
 
 GEOPARQUET_MEDIA_TYPE = "application/vnd.apache.parquet"
 
 GetSearchRequestModel = stac_fastapi.api.models.create_request_model(
     model_name="SearchGetRequest",
-    base_model=SearchGetRequest,
+    base_model=FixedSearchGetRequest,
     mixins=[OffsetPaginationExtension().GET],
     request_type="GET",
 )
 PostSearchRequestModel = stac_fastapi.api.models.create_request_model(
     model_name="SearchPostRequest",
-    base_model=SearchPostRequest,
+    base_model=BaseSearchPostRequest,
     mixins=[OffsetPaginationExtension().POST],
     request_type="POST",
 )
@@ -46,7 +46,7 @@ class State(TypedDict):
     collections: dict[str, dict[str, Any]]
     """A mapping of collection id to collection."""
 
-    hrefs: dict[str, list[str]]
+    hrefs: dict[str, str]
     """A mapping of collection id to geoparquet href."""
 
 
@@ -56,23 +56,26 @@ async def lifespan(app: FastAPI) -> AsyncIterator[State]:
     settings: Settings = app.extra["settings"]
     collections = app.extra["collections"]
     collection_dict = dict()
-    hrefs = defaultdict(list)
+    hrefs = dict()
     for collection in collections:
         if collection["id"] in collection_dict:
             raise HTTPException(
-                500, f"two collections with the same id: {collection.id}"
+                500, f"two collections with the same id: {collection['id']}"
             )
         else:
             collection_dict[collection["id"]] = collection
         for key, asset in collection["assets"].items():
             if asset.get("type") == GEOPARQUET_MEDIA_TYPE:
-                hrefs[collection["id"]].append(
-                    pystac.utils.make_absolute_href(
+                if collection["id"] in hrefs:
+                    raise HTTPException(
+                        500, f"two hrefs for one collection: {collection['id']}"
+                    )
+                else:
+                    hrefs[collection["id"]] = pystac.utils.make_absolute_href(
                         asset["href"],
                         settings.stac_fastapi_collections_href,
                         start_is_dir=False,
                     )
-                )
     yield {
         "client": client,
         "collections": collection_dict,

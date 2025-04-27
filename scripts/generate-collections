@@ -2,22 +2,19 @@
 
 import asyncio
 import json
-import sys
 from pathlib import Path
 
 import pystac.utils
 import rustac
 
-OUTPUT_PATH = Path(__file__).parents[1] / "data" / "collections.json"
+DATA_PATH = Path(__file__).parents[1] / "data"
+OUTPUT_PATH = DATA_PATH / "collections.json"
 
 
 async def main() -> None:
-    if len(sys.argv) == 1:
-        raise Exception("ERROR: must provide at least one href on the command line")
-
     collections = []
-    for href in sys.argv[1:]:
-        items = await rustac.read(href)
+    for href in DATA_PATH.glob("*.parquet"):
+        items = await rustac.read(str(href))
         collection = rustac.collection_from_id_and_items(
             Path(href).stem, items["features"]
         )

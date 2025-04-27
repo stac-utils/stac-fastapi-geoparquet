@@ -2,7 +2,7 @@ from fastapi.testclient import TestClient
 from pystac import Catalog
 
 
-async def test_root(client: TestClient) -> None:
+def test_root(client: TestClient) -> None:
     response = client.get("/")
     assert response.status_code == 200
     d = response.json()
