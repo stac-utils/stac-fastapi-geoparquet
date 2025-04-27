@@ -3,17 +3,17 @@ import urllib.parse
 from fastapi.testclient import TestClient
 
 
-async def test_get_search(client: TestClient) -> None:
+def test_get_search(client: TestClient) -> None:
     response = client.get("/search")
     assert response.status_code == 200, response.text
 
 
-async def test_post_search(client: TestClient) -> None:
+def test_post_search(client: TestClient) -> None:
     response = client.post("/search", json={})
     assert response.status_code == 200, response.text
 
 
-async def test_paging(client: TestClient) -> None:
+def test_paging(client: TestClient) -> None:
     params = {"limit": 1}
     response = client.get("/search", params=params)
     assert response.status_code == 200
@@ -32,7 +32,7 @@ async def test_paging(client: TestClient) -> None:
     assert response.json()["features"][0]["id"] == "ne_m_4110263_sw_13_060_20220820"
 
 
-async def test_collection_link(client: TestClient) -> None:
+def test_collection_link(client: TestClient) -> None:
     response = client.get("/search", params={"limit": 1})
     response.raise_for_status()
     data = response.json()
