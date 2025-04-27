@@ -81,30 +81,13 @@ class Client(BaseCoreClient):  # type: ignore[misc]
         else:
             maybe_intersects = None
 
-        if datetime:
-            if isinstance(datetime, tuple):
-                assert len(datetime) == 2
-                if datetime[0]:
-                    maybe_datetime = datetime[0].isoformat()
-                else:
-                    maybe_datetime = ".."
-                maybe_datetime += "/"
-                if datetime[1]:
-                    maybe_datetime += datetime[1].isoformat()
-                else:
-                    maybe_datetime += ".."
-            else:
-                maybe_datetime = datetime.isoformat()
-        else:
-            maybe_datetime = None
-
         try:
             search = BaseSearchPostRequest(
                 collections=collections,
                 ids=ids,
                 bbox=bbox,
                 intersects=maybe_intersects,
-                datetime=maybe_datetime,
+                datetime=datetime,
                 limit=limit,
             )
         except ValidationError as e:

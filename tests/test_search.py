@@ -42,3 +42,8 @@ def test_collection_link(client: TestClient) -> None:
     assert link["href"].startswith(str(client.base_url)), (
         link["href"] + " does not start with the test client base url"
     )
+
+
+def test_string_datetime(client: TestClient) -> None:
+    response = client.get("/search", params={"datetime": "2025-04-27T00:00:00Z"})
+    response.raise_for_status()
