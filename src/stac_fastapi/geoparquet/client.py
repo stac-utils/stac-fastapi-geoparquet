@@ -9,16 +9,16 @@ from rustac import DuckdbClient
 from starlette.requests import Request
 
 from stac_fastapi.api.models import BaseSearchPostRequest
-from stac_fastapi.types.core import AsyncBaseCoreClient
+from stac_fastapi.types.core import BaseCoreClient
 from stac_fastapi.types.errors import NotFoundError
 from stac_fastapi.types.rfc3339 import DateTimeType
 from stac_fastapi.types.stac import BBox, Collection, Collections, Item, ItemCollection
 
 
-class Client(AsyncBaseCoreClient):  # type: ignore
+class Client(BaseCoreClient):  # type: ignore
     """A stac-fastapi-geoparquet client."""
 
-    async def all_collections(self, *, request: Request, **kwargs: Any) -> Collections:
+    def all_collections(self, *, request: Request, **kwargs: Any) -> Collections:
         collections = cast(dict[str, dict[str, Any]], request.state.collections)
         return Collections(
             collections=[
@@ -38,7 +38,7 @@ class Client(AsyncBaseCoreClient):  # type: ignore
             ],
         )
 
-    async def get_collection(
+    def get_collection(
         self, *, request: Request, collection_id: str, **kwargs: Any
     ) -> Collection:
         collections = cast(dict[str, dict[str, Any]], request.state.collections)
@@ -47,10 +47,10 @@ class Client(AsyncBaseCoreClient):  # type: ignore
         else:
             raise NotFoundError(f"Collection does not exist: {collection_id}")
 
-    async def get_item(
+    def get_item(
         self, *, request: Request, item_id: str, collection_id: str, **kwargs: Any
     ) -> Item:
-        item_collection = await self.get_search(
+        item_collection = self.get_search(
             request=request,
             ids=[item_id],
             collections=[collection_id],
@@ -63,7 +63,7 @@ class Client(AsyncBaseCoreClient):  # type: ignore
                 f"Item does not exist: {item_id} in collection {collection_id}"
             )
 
-    async def get_search(
+    def get_search(
         self,
         *,
         request: Request,
@@ -110,7 +110,7 @@ class Client(AsyncBaseCoreClient):  # type: ignore
         except ValidationError as e:
             raise HTTPException(400, f"invalid request: {e}")
 
-        return await self.search(
+        return self.search(
             request=request,
             search=search,
             offset=offset,
@@ -118,7 +118,7 @@ class Client(AsyncBaseCoreClient):  # type: ignore
             **kwargs,
         )
 
-    async def item_collection(
+    def item_collection(
         self,
         *,
         request: Request,
@@ -136,24 +136,24 @@ class Client(AsyncBaseCoreClient):  # type: ignore
             limit=limit,
             offset=offset,
         )
-        return await self.search(
+        return self.search(
             request=request,
             search=search,
             url=str(request.url_for("Get ItemCollection", collection_id=collection_id)),
             **kwargs,
         )
 
-    async def post_search(
+    def post_search(
         self, search_request: BaseSearchPostRequest, *, request: Request, **kwargs: Any
     ) -> ItemCollection:
-        return await self.search(
+        return self.search(
             search=search_request,
             request=request,
             url=str(request.url_for("Search")),
             **kwargs,
         )
 
-    async def search(
+    def search(
         self,
         *,
         request: Request,
