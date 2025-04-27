@@ -182,7 +182,10 @@ class Client(BaseCoreClient):  # type: ignore[misc]
                     }
                 )
                 collection_items = client.search(href, **collection_search_dict)
-                items.extend(collection_items)
+                for item in collection_items:
+                    # Careful ... we aren't updating `collection_items` with the
+                    # correct links.
+                    items.append(self.item_with_links(item, request, collection))
                 if len(items) >= limit:
                     collections.insert(0, collection)
                     offset = offset + len(collection_items)
@@ -193,7 +196,7 @@ class Client(BaseCoreClient):  # type: ignore[misc]
 
         item_collection = {
             "type": "FeatureCollection",
-            "features": [self.item_with_links(item, request) for item in items],
+            "features": items,
         }
         num_items = len(item_collection["features"])
 
@@ -256,7 +259,9 @@ class Client(BaseCoreClient):  # type: ignore[misc]
         item_collection["links"] = links
         return ItemCollection(**item_collection)
 
-    def item_with_links(self, item: dict[str, Any], request: Request) -> dict[str, Any]:
+    def item_with_links(
+        self, item: dict[str, Any], request: Request, collection: str
+    ) -> dict[str, Any]:
         links = [
             {
                 "href": str(request.url_for("Landing Page")),
@@ -264,26 +269,24 @@ class Client(BaseCoreClient):  # type: ignore[misc]
                 "type": "application/json",
             },
         ]
-        if collection_id := item.get("collection"):
-            href = str(request.url_for("Get Collection", collection_id=collection_id))
+        item["collection"] = collection
+        href = str(request.url_for("Get Collection", collection_id=collection))
+        links.append({"href": href, "rel": "collection", "type": "application/json"})
+        links.append({"href": href, "rel": "parent", "type": "application/json"})
+        if item_id := item.get("id"):
             links.append(
-                {"href": href, "rel": "collection", "type": "application/json"}
+                {
+                    "href": str(
+                        request.url_for(
+                            "Get Item",
+                            collection_id=collection,
+                            item_id=item_id,
+                        )
+                    ),
+                    "rel": "self",
+                    "type": "application/geo+json",
+                }
             )
-            links.append({"href": href, "rel": "parent", "type": "application/json"})
-            if item_id := item.get("id"):
-                links.append(
-                    {
-                        "href": str(
-                            request.url_for(
-                                "Get Item",
-                                collection_id=collection_id,
-                                item_id=item_id,
-                            )
-                        ),
-                        "rel": "self",
-                        "type": "application/geo+json",
-                    }
-                )
         for link in item.get("links", []):
             if link["rel"] not in ("root", "parent", "collection", "self"):
                 links.append(link)
