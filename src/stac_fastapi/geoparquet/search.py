@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, Any
 
 import attr
 from fastapi import HTTPException, Query
@@ -36,7 +36,7 @@ def crop(v: PositiveInt) -> PositiveInt:
 Limit = Annotated[PositiveInt, AfterValidator(crop)]
 
 
-def _validate_datetime(instance, attribute, value):
+def _validate_datetime(instance: Any, attribute: Any, value: str) -> None:
     """Validate Datetime."""
     _ = str_to_interval(value)
 
@@ -97,13 +97,13 @@ def _bbox_converter(
             raise HTTPException(400, f"invalid bbox: {e}")
         if len(t) not in (4, 6):
             raise HTTPException(400, f"invalid bbox count: {len(t)}")
-        return t
+        return t  # type: ignore[return-value]
     else:
         return None
 
 
 @attr.s
-class FixedSearchGetRequest(APIRequest, DatetimeMixin):
+class FixedSearchGetRequest(APIRequest, DatetimeMixin):  # type: ignore[misc]
     """Base arguments for GET Request."""
 
     collections: list[str] | None = attr.ib(
