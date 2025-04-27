@@ -1,4 +1,5 @@
 import urllib.parse
+from typing import Any
 
 from fastapi.testclient import TestClient
 
@@ -61,3 +62,23 @@ def test_400_bbox(client: TestClient) -> None:
 
     response = client.get("/search", params={"bbox": "100.0"})
     assert response.status_code == 400
+
+
+def test_multiple_collections(client: TestClient) -> None:
+    # https://github.com/stac-utils/stac-fastapi-geoparquet/issues/18
+    response = client.get(
+        "/search", params={"collections": "naip-10,openaerialmap-10", "limit": "3"}
+    )
+    response.raise_for_status()
+    data = response.json()
+    items: list[dict[str, Any]] = data["features"]
+    next_link = next(link for link in data["links"] if link["rel"] == "next")
+    while next_link:
+        response = client.get(next_link["href"])
+        response.raise_for_status()
+        data = response.json()
+        items.extend(data["features"])
+        next_link = next(
+            (link for link in data["links"] if link["rel"] == "next"), None
+        )
+    assert len(items) == 20
