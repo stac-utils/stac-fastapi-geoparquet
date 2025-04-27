@@ -1,7 +1,7 @@
 from stac_fastapi.types.config import ApiSettings
 
 
-class Settings(ApiSettings):  # type: ignore
+class Settings(ApiSettings):  # type: ignore[misc]
     """stac-fastapi-geoparquet settings"""
 
     stac_fastapi_collections_href: str | None = None

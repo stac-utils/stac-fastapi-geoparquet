@@ -15,7 +15,7 @@ from stac_fastapi.types.rfc3339 import DateTimeType
 from stac_fastapi.types.stac import BBox, Collection, Collections, Item, ItemCollection
 
 
-class Client(BaseCoreClient):  # type: ignore
+class Client(BaseCoreClient):  # type: ignore[misc]
     """A stac-fastapi-geoparquet client."""
 
     def all_collections(self, *, request: Request, **kwargs: Any) -> Collections:
