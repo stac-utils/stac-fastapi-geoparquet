@@ -11,7 +11,7 @@ dependencies = [
     "obstore>=0.6.0",
     "pydantic>=2.10.4",
     "pystac>=1.13.0",
-    "rustac==0.7.0b3",
+    "rustac==0.7.0b4",
     "stac-fastapi-api>=5.0.2",
     "stac-fastapi-extensions>=5.0.2",
     "stac-fastapi-types>=5.0.2",

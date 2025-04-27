@@ -13,16 +13,17 @@ from rustac import Collection, DuckdbClient
 import stac_fastapi.api.models
 from stac_fastapi.api.app import StacApi
 from stac_fastapi.extensions.core.pagination import OffsetPaginationExtension
-from stac_fastapi.types.search import BaseSearchGetRequest, BaseSearchPostRequest
+from stac_fastapi.types.search import BaseSearchPostRequest
 
 from .client import Client
+from .search import FixedSearchGetRequest
 from .settings import Settings
 
 GEOPARQUET_MEDIA_TYPE = "application/vnd.apache.parquet"
 
 GetSearchRequestModel = stac_fastapi.api.models.create_request_model(
     model_name="SearchGetRequest",
-    base_model=BaseSearchGetRequest,
+    base_model=FixedSearchGetRequest,
     mixins=[OffsetPaginationExtension().GET],
     request_type="GET",
 )

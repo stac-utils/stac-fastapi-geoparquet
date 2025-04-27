@@ -69,7 +69,7 @@ class Client(BaseCoreClient):  # type: ignore[misc]
         request: Request,
         collections: list[str] | None = None,
         ids: list[str] | None = None,
-        bbox: BBox | None = None,
+        bbox: BBox | str | None = None,
         intersects: str | None = None,
         datetime: DateTimeType | None = None,
         limit: int | None = 10,
@@ -80,6 +80,16 @@ class Client(BaseCoreClient):  # type: ignore[misc]
             maybe_intersects = json.loads(intersects)
         else:
             maybe_intersects = None
+
+        if isinstance(bbox, str):
+            if bbox.startswith("["):
+                bbox = bbox[1:]
+            if bbox.endswith("]"):
+                bbox = bbox[:-1]
+            try:
+                bbox = [float(s) for s in bbox.split(",")]
+            except ValueError as e:
+                raise HTTPException(400, f"invalid bbox: {e}")
 
         try:
             search = BaseSearchPostRequest(

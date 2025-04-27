@@ -47,3 +47,17 @@ def test_collection_link(client: TestClient) -> None:
 def test_string_datetime(client: TestClient) -> None:
     response = client.get("/search", params={"datetime": "2025-04-27T00:00:00Z"})
     response.raise_for_status()
+
+    response = client.get("/search", params={"datetime": "2025-04-27T00:00:00Z/"})
+    response.raise_for_status()
+
+    response = client.get("/search", params={"datetime": "/2025-04-27T00:00:00Z"})
+    response.raise_for_status()
+
+
+def test_400_bbox(client: TestClient) -> None:
+    response = client.get("/search", params={"bbox": "[100.0, 0.0, 105.0, 1.0]"})
+    assert response.status_code == 400
+
+    response = client.get("/search", params={"bbox": "100.0"})
+    assert response.status_code == 400
