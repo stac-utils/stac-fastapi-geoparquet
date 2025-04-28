@@ -128,3 +128,12 @@ def test_paging_filter(client: TestClient) -> None:
     response = client.get("/search", params=url.query)
     assert response.status_code == 200
     assert response.json()["features"][0]["id"] == "ne_m_4110263_sw_13_060_20220820"
+
+
+def test_fields(client: TestClient) -> None:
+    response = client.get(
+        "/search", params={"collections": "naip", "limit": "1", "fields": "id,geometry"}
+    )
+    response.raise_for_status()
+    data = response.json()
+    assert "properties" not in data["features"][0]
