@@ -141,6 +141,12 @@ def create(
         ),
         search_get_request_model=GetSearchRequestModel,
         search_post_request_model=PostSearchRequestModel,
+        extensions=[
+            OffsetPaginationExtension(),
+            SearchFilterExtension(),
+            FieldsExtension(),
+            SortExtension(),
+        ],
     )
     return api
 
