@@ -1562,14 +1562,14 @@ wheels = [
 
 [[package]]
 name = "rustac"
-version = "0.7.0b5"
+version = "0.7.0b6"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/7c/bd/ab884406ebd93e14acb04d91396dbfe21ec93a2aa2c2de0650dc9fa8ee25/rustac-0.7.0b5.tar.gz", hash = "sha256:4fe262f5cad8374e09ccfe21f17741c2393ac01988145ee3920db181c8838ea3", size = 378062, upload_time = "2025-04-28T10:52:58.952Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/61/97/6b0085e36899dc6646e0f2a7f84d5883143e60ae24162ea9fe9527fa17cd/rustac-0.7.0b6.tar.gz", hash = "sha256:36fbcaf58feaf460b5077d9647568134786835d07d613050c7b8322614718ed8", size = 378063, upload_time = "2025-04-28T19:57:22.41Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/56/61/94f402b131c0a357e86344ad26152709142d0787a8b5c4a4effb75820cb1/rustac-0.7.0b5-cp311-abi3-macosx_10_12_x86_64.whl", hash = "sha256:fcf658eaf552df03d81fc728ed00322d345112119725523977ffb25d3eca1a7a", size = 20817557, upload_time = "2025-04-28T10:52:56.615Z" },
-    { url = "https://files.pythonhosted.org/packages/a8/67/e8255a7ab293c793ea20c908a0d41a530fd49b5459cccf50cf048d6085a3/rustac-0.7.0b5-cp311-abi3-macosx_11_0_arm64.whl", hash = "sha256:34d14f8001c42cc6095d35271df9f7a62da535cafb2323b3537cd5244843682f", size = 18976298, upload_time = "2025-04-28T10:52:53.209Z" },
-    { url = "https://files.pythonhosted.org/packages/7b/6c/2ce22ccf613dc98744c322316eb0e6b5bc9faff568db942de0107e212057/rustac-0.7.0b5-cp311-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:2c3b742126bf1d881ffdc111fad322e9e6cb1d3458134fe92c5e42954d876be6", size = 22909337, upload_time = "2025-04-28T10:52:50.428Z" },
-    { url = "https://files.pythonhosted.org/packages/d7/cd/a2eca567f189957e3f58094970fd5356bf08c2050ef025ba5d4b5d076d6e/rustac-0.7.0b5-cp311-abi3-manylinux_2_28_aarch64.whl", hash = "sha256:16189a05d3397476c091affa840b20e6862fcabadc67d1af62839346b30a41dd", size = 20749124, upload_time = "2025-04-28T10:52:46.365Z" },
+    { url = "https://files.pythonhosted.org/packages/30/aa/225b30526e6bc62022f91c839628f3b6d5fc48928eb73a55aafce64692d6/rustac-0.7.0b6-cp311-abi3-macosx_10_12_x86_64.whl", hash = "sha256:1bdef01fb91a6509320837b6ae79d3bb48cf1df42fab5b34425320410a5016f8", size = 20818244, upload_time = "2025-04-28T19:57:19.556Z" },
+    { url = "https://files.pythonhosted.org/packages/70/38/4bfc515f4283236b0378a76628f3454bf054665dfdc1412535d8b56566f1/rustac-0.7.0b6-cp311-abi3-macosx_11_0_arm64.whl", hash = "sha256:9677db4e82d847efb1d50617878ef45c18e8c8134d69dc537da8d0a90d64731f", size = 18983566, upload_time = "2025-04-28T19:57:16.016Z" },
+    { url = "https://files.pythonhosted.org/packages/b6/1a/f534af88d812f7ca38eb91a0c7d9e8fb42687b1c4aa719afd0be8e063f81/rustac-0.7.0b6-cp311-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:e23170c9025ab0bceb33dc3e9ca9b2ac93202c638914ddee64307c4e5e06b309", size = 22903952, upload_time = "2025-04-28T19:57:11.64Z" },
+    { url = "https://files.pythonhosted.org/packages/cc/fd/03a623d3890f37dbb75ffef5583b59b502f6f1c94018da1871ab4c8bd99e/rustac-0.7.0b6-cp311-abi3-manylinux_2_28_aarch64.whl", hash = "sha256:5567e159525cae1eeda1d0981c7fffc05926a08cfc3e253fcbfd91648613d0a8", size = 20756663, upload_time = "2025-04-28T19:57:07.96Z" },
 ]
 
 [[package]]
@@ -1764,7 +1764,7 @@ requires-dist = [
     { name = "obstore", specifier = ">=0.6.0" },
     { name = "pydantic", specifier = ">=2.10.4" },
     { name = "pystac", specifier = ">=1.13.0" },
-    { name = "rustac", specifier = "==0.7.0b5" },
+    { name = "rustac", specifier = "==0.7.0b6" },
     { name = "stac-fastapi-api", specifier = ">=5.0.2" },
     { name = "stac-fastapi-extensions", specifier = ">=5.0.2" },
     { name = "stac-fastapi-types", specifier = ">=5.0.2" },
