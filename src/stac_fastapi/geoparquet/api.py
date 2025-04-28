@@ -22,24 +22,18 @@ from .search import FixedSearchGetRequest
 from .settings import Settings
 
 GEOPARQUET_MEDIA_TYPE = "application/vnd.apache.parquet"
+EXTENSIONS = [
+    OffsetPaginationExtension(),
+    SearchFilterExtension(),
+    FieldsExtension(),
+    SortExtension(),
+]
 
 GetSearchRequestModel = stac_fastapi.api.models.create_get_request_model(
-    base_model=FixedSearchGetRequest,
-    extensions=[
-        OffsetPaginationExtension(),
-        SearchFilterExtension(),
-        FieldsExtension(),
-        SortExtension(),
-    ],
+    base_model=FixedSearchGetRequest, extensions=EXTENSIONS
 )
 PostSearchRequestModel = stac_fastapi.api.models.create_post_request_model(
-    base_model=BaseSearchPostRequest,
-    extensions=[
-        SearchFilterExtension(),
-        OffsetPaginationExtension(),
-        FieldsExtension(),
-        SortExtension(),
-    ],
+    base_model=BaseSearchPostRequest, extensions=EXTENSIONS
 )
 
 
@@ -141,12 +135,7 @@ def create(
         ),
         search_get_request_model=GetSearchRequestModel,
         search_post_request_model=PostSearchRequestModel,
-        extensions=[
-            OffsetPaginationExtension(),
-            SearchFilterExtension(),
-            FieldsExtension(),
-            SortExtension(),
-        ],
+        extensions=EXTENSIONS,
     )
     return api
 
