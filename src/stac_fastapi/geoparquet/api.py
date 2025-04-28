@@ -95,7 +95,7 @@ def create(
     if settings is None:
         settings = Settings(
             stac_fastapi_landing_id="stac-fastapi-geoparquet",
-            stac_fastapi_title="stac-geoparquet-geoparquet",
+            stac_fastapi_title="stac-fastapi-geoparquet",
             stac_fastapi_description="A stac-fastapi server backend by stac-geoparquet",
         )
 
