@@ -123,8 +123,45 @@ def test_paging_filter(client: TestClient) -> None:
         "offset": ["1"],
         "collections": ["naip,naip-10,openaerialmap-10,openaerialmap"],
         "filter": ["naip:year='2022'"],
-        "filter_lang": ["cql2-text"],
+        "filter-lang": ["cql2-text"],
     }
     response = client.get("/search", params=url.query)
     assert response.status_code == 200
     assert response.json()["features"][0]["id"] == "ne_m_4110263_sw_13_060_20220820"
+
+
+def test_fields_get(client: TestClient) -> None:
+    response = client.get(
+        "/search", params={"collections": "naip", "limit": "1", "fields": "id,geometry"}
+    )
+    response.raise_for_status()
+    data = response.json()
+    assert "properties" not in data["features"][0]
+
+
+def test_fields_post(client: TestClient) -> None:
+    response = client.post(
+        "/search",
+        json={
+            "collections": ["naip"],
+            "limit": "1",
+            "fields": {"include": ["id", "geometry"]},
+        },
+    )
+    response.raise_for_status()
+    data = response.json()
+    assert "properties" not in data["features"][0]
+
+
+def test_sort_get(client: TestClient) -> None:
+    response = client.get("/search", params={"limit": "1", "sortby": "datetime"})
+    response.raise_for_status()
+
+
+def test_sort_post(client: TestClient) -> None:
+    response = client.post(
+        "/search",
+        json={"limit": "1", "sortby": [{"field": "datetime", "direction": "asc"}]},
+    )
+    print(response.json())
+    response.raise_for_status()

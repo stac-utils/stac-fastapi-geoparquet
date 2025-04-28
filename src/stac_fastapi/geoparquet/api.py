@@ -11,8 +11,10 @@ from rustac import Collection, DuckdbClient
 
 import stac_fastapi.api.models
 from stac_fastapi.api.app import StacApi
+from stac_fastapi.extensions.core.fields import FieldsExtension
 from stac_fastapi.extensions.core.filter import SearchFilterExtension
 from stac_fastapi.extensions.core.pagination import OffsetPaginationExtension
+from stac_fastapi.extensions.core.sort import SortExtension
 from stac_fastapi.types.search import BaseSearchPostRequest
 
 from .client import Client
@@ -20,20 +22,18 @@ from .search import FixedSearchGetRequest
 from .settings import Settings
 
 GEOPARQUET_MEDIA_TYPE = "application/vnd.apache.parquet"
+EXTENSIONS = [
+    OffsetPaginationExtension(),
+    SearchFilterExtension(),
+    FieldsExtension(),
+    SortExtension(),
+]
 
-GetSearchRequestModel = stac_fastapi.api.models.create_request_model(
-    model_name="SearchGetRequest",
-    base_model=FixedSearchGetRequest,
-    extensions=[SearchFilterExtension()],
-    mixins=[OffsetPaginationExtension().GET],
-    request_type="GET",
+GetSearchRequestModel = stac_fastapi.api.models.create_get_request_model(
+    base_model=FixedSearchGetRequest, extensions=EXTENSIONS
 )
-PostSearchRequestModel = stac_fastapi.api.models.create_request_model(
-    model_name="SearchPostRequest",
-    base_model=BaseSearchPostRequest,
-    extensions=[SearchFilterExtension()],
-    mixins=[OffsetPaginationExtension().POST],
-    request_type="POST",
+PostSearchRequestModel = stac_fastapi.api.models.create_post_request_model(
+    base_model=BaseSearchPostRequest, extensions=EXTENSIONS
 )
 
 
@@ -135,6 +135,7 @@ def create(
         ),
         search_get_request_model=GetSearchRequestModel,
         search_post_request_model=PostSearchRequestModel,
+        extensions=EXTENSIONS,
     )
     return api
 
