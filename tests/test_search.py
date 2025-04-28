@@ -151,3 +151,17 @@ def test_fields_post(client: TestClient) -> None:
     response.raise_for_status()
     data = response.json()
     assert "properties" not in data["features"][0]
+
+
+def test_sort_get(client: TestClient) -> None:
+    response = client.get("/search", params={"limit": "1", "sortby": "datetime"})
+    response.raise_for_status()
+
+
+def test_sort_post(client: TestClient) -> None:
+    response = client.post(
+        "/search",
+        json={"limit": "1", "sortby": [{"field": "datetime", "direction": "asc"}]},
+    )
+    print(response.json())
+    response.raise_for_status()

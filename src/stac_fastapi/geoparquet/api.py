@@ -14,6 +14,7 @@ from stac_fastapi.api.app import StacApi
 from stac_fastapi.extensions.core.fields import FieldsExtension
 from stac_fastapi.extensions.core.filter import SearchFilterExtension
 from stac_fastapi.extensions.core.pagination import OffsetPaginationExtension
+from stac_fastapi.extensions.core.sort import SortExtension
 from stac_fastapi.types.search import BaseSearchPostRequest
 
 from .client import Client
@@ -28,6 +29,7 @@ GetSearchRequestModel = stac_fastapi.api.models.create_get_request_model(
         OffsetPaginationExtension(),
         SearchFilterExtension(),
         FieldsExtension(),
+        SortExtension(),
     ],
 )
 PostSearchRequestModel = stac_fastapi.api.models.create_post_request_model(
@@ -36,6 +38,7 @@ PostSearchRequestModel = stac_fastapi.api.models.create_post_request_model(
         SearchFilterExtension(),
         OffsetPaginationExtension(),
         FieldsExtension(),
+        SortExtension(),
     ],
 )
 

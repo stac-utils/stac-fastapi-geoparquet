@@ -175,7 +175,7 @@ class Client(BaseCoreClient):  # type: ignore[misc]
         if "filter" not in search_dict:
             search_dict.pop("filter_lang", None)
             search_dict.pop("filter-lang", None)
-        if fields := search_dict.pop("fields"):
+        if fields := search_dict.pop("fields", None):
             if isinstance(fields, list):
                 include = []
                 exclude = []
@@ -194,6 +194,8 @@ class Client(BaseCoreClient):  # type: ignore[misc]
                 )
             else:
                 raise HTTPException(400, f"unexpected fields type: {fields}")
+        if sortby := search_dict.pop("sortby", None):
+            search_dict["sortby"] = sortby
 
         limit = search_dict.get("limit", DEFAULT_LIMIT)
         offset = search_dict.get("offset", 0) or 0
