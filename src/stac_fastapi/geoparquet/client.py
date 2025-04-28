@@ -165,12 +165,35 @@ class Client(BaseCoreClient):  # type: ignore[misc]
             collections = list(hrefs.keys())
 
         search_dict = search.model_dump(exclude_none=True, by_alias=True)
-        kwargs.pop("filter_crs", None)
-        if filter_expr := kwargs.pop("filter_expr", None):
-            kwargs["filter"] = filter_expr
-        if "filter" not in kwargs:
-            kwargs.pop("filter_lang", None)
         search_dict.update(**kwargs)
+
+        search_dict.pop("filter_crs", None)
+        if filter_expr := search_dict.pop("filter_expr", None):
+            search_dict["filter"] = filter_expr
+        if filter_lang := search_dict.pop("filter_lang", None):
+            search_dict["filter-lang"] = filter_lang
+        if "filter" not in search_dict:
+            search_dict.pop("filter_lang", None)
+            search_dict.pop("filter-lang", None)
+        if fields := search_dict.pop("fields"):
+            if isinstance(fields, list):
+                include = []
+                exclude = []
+                for field in fields:
+                    if field.startswith("-"):
+                        exclude.append(field)
+                    else:
+                        include.append(field)
+                search_dict.update({"include": include, "exclude": exclude})
+            elif isinstance(fields, dict):
+                search_dict.update(
+                    {
+                        "include": list(fields.get("include", [])),
+                        "exclude": list(fields.get("exclude", [])),
+                    }
+                )
+            else:
+                raise HTTPException(400, f"unexpected fields type: {fields}")
 
         limit = search_dict.get("limit", DEFAULT_LIMIT)
         offset = search_dict.get("offset", 0) or 0
