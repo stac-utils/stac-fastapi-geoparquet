@@ -164,7 +164,7 @@ class Client(BaseCoreClient):  # type: ignore[misc]
         else:
             collections = list(hrefs.keys())
 
-        search_dict = search.model_dump(exclude_none=True)
+        search_dict = search.model_dump(exclude_none=True, by_alias=True)
         kwargs.pop("filter_crs", None)
         if filter_expr := kwargs.pop("filter_expr", None):
             kwargs["filter"] = filter_expr

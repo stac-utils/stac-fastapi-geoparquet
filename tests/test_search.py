@@ -91,6 +91,24 @@ def test_filter(client: TestClient) -> None:
     assert not response.json()["features"]
 
 
+def test_filter_post(client: TestClient) -> None:
+    params = {
+        "limit": 1,
+        "filter": {"op": "=", "args": [{"property": "naip:year"}, "2022"]},
+    }
+    response = client.post("/search", json=params)
+    response.raise_for_status()
+    assert len(response.json()["features"]) == 1
+
+    params = {
+        "limit": 1,
+        "filter": {"op": "=", "args": [{"property": "naip:year"}, "notayear"]},
+    }
+    response = client.post("/search", json=params)
+    response.raise_for_status()
+    assert len(response.json()["features"]) == 0
+
+
 def test_paging_filter(client: TestClient) -> None:
     params = {"limit": 1, "filter": "naip:year='2022'"}
     response = client.get("/search", params=params)

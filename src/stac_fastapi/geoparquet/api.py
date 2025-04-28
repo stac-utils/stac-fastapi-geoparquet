@@ -31,6 +31,7 @@ GetSearchRequestModel = stac_fastapi.api.models.create_request_model(
 PostSearchRequestModel = stac_fastapi.api.models.create_request_model(
     model_name="SearchPostRequest",
     base_model=BaseSearchPostRequest,
+    extensions=[SearchFilterExtension()],
     mixins=[OffsetPaginationExtension().POST],
     request_type="POST",
 )
