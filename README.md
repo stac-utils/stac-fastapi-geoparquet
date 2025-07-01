@@ -51,6 +51,10 @@ scripts/generate-collections s3://my-bucket/a.parquet s3://my-bucket/b.parquet
 
 This will update `./data/collections.json`.
 
+### Limitations
+
+- Currently, only supports one collection per file (tracking issue: <https://github.com/stac-utils/stac-fastapi-geoparquet/issues/27>)
+
 ## Development
 
 Get [uv](https://docs.astral.sh/uv/getting-started/installation/), then:
