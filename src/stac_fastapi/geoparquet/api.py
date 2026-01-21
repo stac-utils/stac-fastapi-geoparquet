@@ -7,10 +7,9 @@ from typing import Any, TypedDict
 
 import obstore.store
 import pystac.utils
+import stac_fastapi.api.models
 from fastapi import FastAPI, HTTPException
 from rustac import Collection, DuckdbClient
-
-import stac_fastapi.api.models
 from stac_fastapi.api.app import StacApi
 from stac_fastapi.extensions.core.fields import FieldsExtension
 from stac_fastapi.extensions.core.filter import SearchFilterExtension

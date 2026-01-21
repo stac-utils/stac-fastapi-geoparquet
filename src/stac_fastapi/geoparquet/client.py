@@ -6,13 +6,12 @@ from typing import Any, cast
 from fastapi import HTTPException
 from pydantic import ValidationError
 from rustac import DuckdbClient
-from starlette.requests import Request
-
 from stac_fastapi.api.models import BaseSearchPostRequest
 from stac_fastapi.types.core import BaseCoreClient
 from stac_fastapi.types.errors import NotFoundError
 from stac_fastapi.types.rfc3339 import DateTimeType
 from stac_fastapi.types.stac import BBox, Collection, Collections, Item, ItemCollection
+from starlette.requests import Request
 
 DEFAULT_LIMIT = 10_000
 

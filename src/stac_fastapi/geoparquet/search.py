@@ -4,10 +4,9 @@ import attr
 from fastapi import HTTPException, Query
 from pydantic import PositiveInt
 from pydantic.functional_validators import AfterValidator
-from stac_pydantic.shared import BBox
-
 from stac_fastapi.types.rfc3339 import str_to_interval
 from stac_fastapi.types.search import APIRequest, DatetimeMixin
+from stac_pydantic.shared import BBox
 
 DateTimeQueryType = Annotated[
     str | None,
