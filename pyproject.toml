@@ -40,7 +40,6 @@ dev = [
     "fastapi[standard]>=0.115.6",
     "mkdocs-material>=9.6.5",
     "mypy>=1.15.0",
-    "pygithub>=2.6.1",
     "pystac[validation]>=1.12.2",
     "pytest>=8.3.4",
     "pytest-asyncio>=0.25.3",
@@ -78,7 +77,7 @@ filterwarnings = [
 ]
 
 [tool.ruff.lint]
-select = ["E", "F", "I"]
+select = ["E", "F", "I", "UP"]
 
 [build-system]
 requires = ["setuptools"]

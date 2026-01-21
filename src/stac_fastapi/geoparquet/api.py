@@ -1,8 +1,9 @@
 import json
 import urllib.parse
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import Any, AsyncIterator, TypedDict
+from typing import Any, TypedDict
 
 import obstore.store
 import pystac.utils
