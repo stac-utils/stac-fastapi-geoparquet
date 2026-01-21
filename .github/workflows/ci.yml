@@ -13,6 +13,7 @@ jobs:
     strategy:
       matrix:
         python-version:
+          - "3.11"
           - "3.12"
           - "3.13"
           - "3.14"
@@ -34,7 +35,7 @@ jobs:
       - name: Build docs
         run: uv run mkdocs build --strict
       - uses: actions/upload-pages-artifact@v4
-        if: ${{ github.ref == 'refs/heads/main' && matrix.python-version == '3.12' }}
+        if: ${{ github.ref == 'refs/heads/main' && matrix.python-version == '3.11' }}
         with:
           path: site/
   deploy-docs:
