@@ -102,7 +102,7 @@ def _bbox_converter(
 
 
 @attr.s
-class FixedSearchGetRequest(APIRequest, DatetimeMixin):  # type: ignore[misc]
+class FixedSearchGetRequest(APIRequest, DatetimeMixin):
     """Base arguments for GET Request."""
 
     collections: list[str] | None = attr.ib(
