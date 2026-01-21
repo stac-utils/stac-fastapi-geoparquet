@@ -8,34 +8,14 @@ from typing import Any, TypedDict
 import obstore.store
 import pystac.utils
 from fastapi import FastAPI, HTTPException
-from rustac import Collection, DuckdbClient
-
-import stac_fastapi.api.models
+from rustac import DuckdbClient
 from stac_fastapi.api.app import StacApi
-from stac_fastapi.extensions.core.fields import FieldsExtension
-from stac_fastapi.extensions.core.filter import SearchFilterExtension
-from stac_fastapi.extensions.core.pagination import OffsetPaginationExtension
-from stac_fastapi.extensions.core.sort import SortExtension
-from stac_fastapi.types.search import BaseSearchPostRequest
 
 from .client import Client
-from .search import FixedSearchGetRequest
+from .models import EXTENSIONS, GetSearchRequestModel, PostSearchRequestModel
 from .settings import Settings
 
 GEOPARQUET_MEDIA_TYPE = "application/vnd.apache.parquet"
-EXTENSIONS = [
-    OffsetPaginationExtension(),
-    SearchFilterExtension(),
-    FieldsExtension(),
-    SortExtension(),
-]
-
-GetSearchRequestModel = stac_fastapi.api.models.create_get_request_model(
-    base_model=FixedSearchGetRequest, extensions=EXTENSIONS
-)
-PostSearchRequestModel = stac_fastapi.api.models.create_post_request_model(
-    base_model=BaseSearchPostRequest, extensions=EXTENSIONS
-)
 
 
 class State(TypedDict):
@@ -43,7 +23,7 @@ class State(TypedDict):
 
     client: DuckdbClient
     """The DuckDB client.
-    
+
     It's just an in-memory DuckDB connection with the spatial extension enabled.
     """
 
@@ -143,7 +123,7 @@ def create(
 
 def collections_from_geoparquet_href(
     href: str, duckdb_client: DuckdbClient
-) -> list[Collection]:
+) -> list[dict[str, Any]]:
     collections = duckdb_client.get_collections(href)
     for collection in collections:
         collection["links"] = []

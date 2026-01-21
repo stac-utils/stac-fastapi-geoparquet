@@ -16,6 +16,7 @@ jobs:
           - "3.11"
           - "3.12"
           - "3.13"
+          - "3.14"
     env:
       DUCKDB_LIB_DIR: /opt/duckdb
       LD_LIBRARY_PATH: /opt/duckdb

@@ -6,22 +6,24 @@ from typing import Any, cast
 from fastapi import HTTPException
 from pydantic import ValidationError
 from rustac import DuckdbClient
-from starlette.requests import Request
-
-from stac_fastapi.api.models import BaseSearchPostRequest
 from stac_fastapi.types.core import BaseCoreClient
 from stac_fastapi.types.errors import NotFoundError
-from stac_fastapi.types.rfc3339 import DateTimeType
-from stac_fastapi.types.stac import BBox, Collection, Collections, Item, ItemCollection
+from stac_fastapi.types.search import BaseSearchPostRequest
+from stac_fastapi.types.stac import Collection, Collections, Item, ItemCollection
+from stac_pydantic.shared import BBox
+from starlette.requests import Request
+
+from .models import PostSearchRequestModel
 
 DEFAULT_LIMIT = 10_000
 
 
-class Client(BaseCoreClient):  # type: ignore[misc]
+class Client(BaseCoreClient):
     """A stac-fastapi-geoparquet client."""
 
-    def all_collections(self, *, request: Request, **kwargs: Any) -> Collections:
-        collections = cast(dict[str, dict[str, Any]], request.state.collections)
+    def all_collections(self, **kwargs: Any) -> Collections:
+        request = kwargs.pop("request")
+        collections = cast(dict[str, Collection], request.state.collections)
         return Collections(
             collections=[
                 collection_with_links(c, request) for c in collections.values()
@@ -40,20 +42,16 @@ class Client(BaseCoreClient):  # type: ignore[misc]
             ],
         )
 
-    def get_collection(
-        self, *, request: Request, collection_id: str, **kwargs: Any
-    ) -> Collection:
-        collections = cast(dict[str, dict[str, Any]], request.state.collections)
+    def get_collection(self, collection_id: str, **kwargs: Any) -> Collection:
+        request = kwargs.pop("request")
+        collections = cast(dict[str, Collection], request.state.collections)
         if collection := collections.get(collection_id):
             return collection_with_links(collection, request)
         else:
             raise NotFoundError(f"Collection does not exist: {collection_id}")
 
-    def get_item(
-        self, *, request: Request, item_id: str, collection_id: str, **kwargs: Any
-    ) -> Item:
+    def get_item(self, item_id: str, collection_id: str, **kwargs: Any) -> Item:
         item_collection = self.get_search(
-            request=request,
             ids=[item_id],
             collections=[collection_id],
             **kwargs,
@@ -65,19 +63,18 @@ class Client(BaseCoreClient):  # type: ignore[misc]
                 f"Item does not exist: {item_id} in collection {collection_id}"
             )
 
-    def get_search(
+    def get_search(  # type: ignore
         self,
-        *,
-        request: Request,
         collections: list[str] | None = None,
         ids: list[str] | None = None,
         bbox: BBox | str | None = None,
         intersects: str | None = None,
-        datetime: DateTimeType | None = None,
+        datetime: str | None = None,
         limit: int | None = 10,
-        offset: int | None = 0,
-        **kwargs: str,
+        **kwargs: Any,
     ) -> ItemCollection:
+        request = kwargs.pop("request")
+
         if intersects:
             maybe_intersects = json.loads(intersects)
         else:
@@ -89,7 +86,7 @@ class Client(BaseCoreClient):  # type: ignore[misc]
             if bbox.endswith("]"):
                 bbox = bbox[:-1]
             try:
-                bbox = [float(s) for s in bbox.split(",")]
+                bbox = cast(BBox, [float(s) for s in bbox.split(",")])
             except ValueError as e:
                 raise HTTPException(400, f"invalid bbox: {e}")
 
@@ -108,23 +105,22 @@ class Client(BaseCoreClient):  # type: ignore[misc]
         return self.search(
             request=request,
             search=search,
-            offset=offset,
             url=str(request.url_for("Search")),
             **kwargs,
         )
 
     def item_collection(
         self,
-        *,
-        request: Request,
         collection_id: str,
         bbox: BBox | None = None,
-        datetime: DateTimeType | None = None,
+        datetime: str | None = None,
         limit: int = 10,
-        offset: int = 0,
-        **kwargs: str,
+        token: str | None = None,
+        **kwargs: Any,
     ) -> ItemCollection:
-        search = BaseSearchPostRequest(
+        request = kwargs.pop("request")
+        offset = kwargs.pop("offset", None)
+        search = PostSearchRequestModel(
             collections=[collection_id],
             bbox=bbox,
             datetime=datetime,
@@ -133,14 +129,15 @@ class Client(BaseCoreClient):  # type: ignore[misc]
         )
         return self.search(
             request=request,
-            search=search,
+            search=cast(BaseSearchPostRequest, search),
             url=str(request.url_for("Get ItemCollection", collection_id=collection_id)),
             **kwargs,
         )
 
     def post_search(
-        self, search_request: BaseSearchPostRequest, *, request: Request, **kwargs: Any
+        self, search_request: BaseSearchPostRequest, **kwargs: Any
     ) -> ItemCollection:
+        request = kwargs.pop("request")
         return self.search(
             search=search_request,
             request=request,
@@ -199,7 +196,7 @@ class Client(BaseCoreClient):  # type: ignore[misc]
 
         limit = search_dict.get("limit", DEFAULT_LIMIT)
         offset = search_dict.get("offset", 0) or 0
-        items: list[dict[str, Any]] = []
+        items: list[Item] = []
         while collections:
             collection = collections.pop(0)
             if href := hrefs.get(collection):
@@ -215,7 +212,9 @@ class Client(BaseCoreClient):  # type: ignore[misc]
                 for item in collection_items:
                     # Careful ... we aren't updating `collection_items` with the
                     # correct links.
-                    items.append(self.item_with_links(item, request, collection))
+                    items.append(
+                        self.item_with_links(cast(Item, item), request, collection)
+                    )
                 if len(items) >= limit:
                     collections.insert(0, collection)
                     offset = offset + len(collection_items)
@@ -224,11 +223,7 @@ class Client(BaseCoreClient):  # type: ignore[misc]
                     limit = limit - len(collection_items)
                     offset = 0
 
-        item_collection = {
-            "type": "FeatureCollection",
-            "features": items,
-        }
-        num_items = len(item_collection["features"])
+        num_items = len(items)
 
         if collections and ((search.limit or DEFAULT_LIMIT) <= num_items):
             next_search = copy.deepcopy(search_dict)
@@ -238,7 +233,7 @@ class Client(BaseCoreClient):  # type: ignore[misc]
         else:
             next_search = None
 
-        links = [
+        links: list[dict[str, Any]] = [
             {
                 "href": str(request.url_for("Landing Page")),
                 "rel": "root",
@@ -286,12 +281,13 @@ class Client(BaseCoreClient):  # type: ignore[misc]
                     }
                 )
 
-        item_collection["links"] = links
-        return ItemCollection(**item_collection)
+        return {
+            "type": "FeatureCollection",
+            "features": items,
+            "links": links,
+        }
 
-    def item_with_links(
-        self, item: dict[str, Any], request: Request, collection: str
-    ) -> dict[str, Any]:
+    def item_with_links(self, item: Item, request: Request, collection: str) -> Item:
         links = [
             {
                 "href": str(request.url_for("Landing Page")),
@@ -324,9 +320,7 @@ class Client(BaseCoreClient):  # type: ignore[misc]
         return item
 
 
-def collection_with_links(
-    collection: dict[str, Any], request: Request
-) -> dict[str, Any]:
+def collection_with_links(collection: Collection, request: Request) -> Collection:
     collection["links"] = [
         {
             "href": str(request.url_for("Landing Page")),

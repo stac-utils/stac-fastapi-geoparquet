@@ -159,5 +159,12 @@ def test_sort_post(client: TestClient) -> None:
         "/search",
         json={"limit": "1", "sortby": [{"field": "datetime", "direction": "asc"}]},
     )
-    print(response.json())
+    response.raise_for_status()
+
+
+def test_get_intersects(client: TestClient) -> None:
+    response = client.get(
+        "/search",
+        params={"intersects": '{"type": "Point", "coordinates": [100.0, 0.0]}'},
+    )
     response.raise_for_status()
