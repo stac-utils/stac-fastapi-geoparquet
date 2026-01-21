@@ -8,7 +8,7 @@ dependencies = [
     "attr>=0.3.2",
     "fastapi>=0.115.8",
     "geojson-pydantic>=1.2.0",
-    "obstore>=0.6.0",
+    "obstore>=0.8.0",
     "pydantic>=2.10.4",
     "pystac>=1.13.0",
     "rustac>=0.7.0",
@@ -18,10 +18,10 @@ dependencies = [
 ]
 classifiers = [
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Development Status :: 1 - Planning",
 ]
 
@@ -40,7 +40,6 @@ dev = [
     "fastapi[standard]>=0.115.6",
     "mkdocs-material>=9.6.5",
     "mypy>=1.15.0",
-    "pygithub>=2.6.1",
     "pystac[validation]>=1.12.2",
     "pytest>=8.3.4",
     "pytest-asyncio>=0.25.3",
@@ -65,7 +64,7 @@ exclude = ["infrastructure/aws/cdk.out/.*", ".venv/*"]
 plugins = "pydantic.mypy"
 
 [[tool.mypy.overrides]]
-module = ["stac_fastapi.*", "config", "magnum"]
+module = ["magnum", "config", "stac_fastapi.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
@@ -78,7 +77,7 @@ filterwarnings = [
 ]
 
 [tool.ruff.lint]
-select = ["E", "F", "I"]
+select = ["E", "F", "I", "UP"]
 
 [build-system]
 requires = ["setuptools"]

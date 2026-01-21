@@ -1,6 +1,6 @@
 """STACK Configs."""
 
-from typing import Annotated, Optional
+from typing import Annotated
 
 from pydantic import field_validator
 from pydantic_settings import BaseSettings
@@ -17,7 +17,7 @@ class Config(BaseSettings):
 
     bucket_name: str = "stac-fastapi-geoparquet"  # set the bucket name
     geoparquet_key: Annotated[
-        Optional[str], "storage key for the geoparquet file within the S3 bucket"
+        str | None, "storage key for the geoparquet file within the S3 bucket"
     ] = None
 
     timeout: int = 30
@@ -25,11 +25,11 @@ class Config(BaseSettings):
 
     # The maximum of concurrent executions you want to reserve for the function.
     # Default: - No specific limit - account limit.
-    max_concurrent: Optional[int] = None
+    max_concurrent: int | None = None
 
     # rate limiting settings
     rate_limit: Annotated[
-        Optional[int],
+        int | None,
         "maximum average requests per second over an extended period of time",
     ] = 10
 
