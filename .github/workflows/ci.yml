@@ -33,7 +33,7 @@ jobs:
         run: scripts/validate
       - name: Build docs
         run: uv run mkdocs build --strict
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v4
         if: ${{ github.ref == 'refs/heads/main' && matrix.python-version == '3.11' }}
         with:
           path: site/
