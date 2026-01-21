@@ -18,7 +18,6 @@ dependencies = [
 ]
 classifiers = [
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
@@ -65,7 +64,7 @@ exclude = ["infrastructure/aws/cdk.out/.*", ".venv/*"]
 plugins = "pydantic.mypy"
 
 [[tool.mypy.overrides]]
-module = ["magnum"]
+module = ["magnum", "config", "stac_fastapi.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
