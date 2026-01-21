@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.4](https://github.com/stac-utils/stac-fastapi-geoparquet/compare/v0.0.3...v0.0.4) (2026-01-21)
+
+
+### Bug Fixes
+
+* bbox paging ([#40](https://github.com/stac-utils/stac-fastapi-geoparquet/issues/40)) ([787dc08](https://github.com/stac-utils/stac-fastapi-geoparquet/commit/787dc08bc6fff8d1175cf8abf87095637b52fe84))
+
 ## [0.0.3](https://github.com/stac-utils/stac-fastapi-geoparquet/compare/v0.0.2...v0.0.3) (2026-01-21)
 
 
