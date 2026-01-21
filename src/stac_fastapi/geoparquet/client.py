@@ -252,6 +252,8 @@ class Client(BaseCoreClient):
             if next_search:
                 if "collections" in next_search:
                     next_search["collections"] = ",".join(collections)
+                if bbox := next_search.get("bbox"):
+                    next_search["bbox"] = ",".join(map(str, bbox))
                 links.append(
                     {
                         "href": url + "?" + urllib.parse.urlencode(next_search),

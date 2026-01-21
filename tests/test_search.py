@@ -168,3 +168,11 @@ def test_get_intersects(client: TestClient) -> None:
         params={"intersects": '{"type": "Point", "coordinates": [100.0, 0.0]}'},
     )
     response.raise_for_status()
+
+
+def test_paging_bbox(client: TestClient) -> None:
+    response = client.get("/search", params={"bbox": "-180,-90,180,90", "limit": 1})
+    response.raise_for_status()
+    next_link = next(link for link in response.json()["links"] if link["rel"] == "next")
+    response = client.get(next_link["href"])
+    response.raise_for_status()
