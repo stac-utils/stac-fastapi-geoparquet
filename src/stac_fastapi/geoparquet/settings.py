@@ -1,8 +1,12 @@
 from stac_fastapi.types.config import ApiSettings
 
 
+
 class Settings(ApiSettings):
     """stac-fastapi-geoparquet settings"""
+
+    stac_fastapi_collections_reload_seconds: int = 60
+    """Interval in seconds to reload collections.json (default: 60)."""
 
     stac_fastapi_collections_href: str | None = None
     """The href of a file containing JSON list of collections.
