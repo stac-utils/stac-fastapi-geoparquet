@@ -1,23 +1,20 @@
+import asyncio
 import json
 import urllib.parse
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
-from fastapi import Request
 from pathlib import Path
-from typing import Any, TypedDict
+from typing import Any, TypedDict, cast
 
 import obstore.store
 import pystac.utils
-from fastapi import FastAPI, HTTPException
-from fastapi import BackgroundTasks
-import asyncio
+from fastapi import FastAPI, HTTPException, Request, Response
 from rustac import DuckdbClient
 from stac_fastapi.api.app import StacApi
 
 from .client import Client
 from .models import EXTENSIONS, GetSearchRequestModel, PostSearchRequestModel
 from .settings import Settings
-
 
 GEOPARQUET_MEDIA_TYPE = "application/vnd.apache.parquet"
 
@@ -26,27 +23,32 @@ _collections_cache = None
 _collections_cache_lock = asyncio.Lock()
 _collections_cache_last_load = 0.0
 
+
 async def load_collections(settings: Settings) -> list[dict[str, Any]]:
     if settings.stac_fastapi_collections_href:
         if urllib.parse.urlparse(settings.stac_fastapi_collections_href).scheme:
             href = settings.stac_fastapi_collections_href
         else:
-            href = "file://" + str(Path(settings.stac_fastapi_collections_href).absolute())
+            href = "file://" + str(
+                Path(settings.stac_fastapi_collections_href).absolute()
+            )
         prefix, file_name = href.rsplit("/", 1)
         store = obstore.store.from_url(prefix)
         result = store.get(file_name)
-        collections = json.loads(bytes(result.bytes()))
+        collections = cast(list[dict[str, Any]], json.loads(bytes(result.bytes())))
     else:
         collections = []
     return collections
 
-async def collections_cache_refresher(settings: Settings):
+
+async def collections_cache_refresher(settings: Settings) -> None:
     global _collections_cache, _collections_cache_last_load
     while True:
         async with _collections_cache_lock:
             _collections_cache = await load_collections(settings)
             _collections_cache_last_load = asyncio.get_event_loop().time()
         await asyncio.sleep(settings.stac_fastapi_collections_reload_seconds)
+
 
 async def get_cached_collections(settings: Settings) -> list[dict[str, Any]]:
     global _collections_cache, _collections_cache_last_load
@@ -73,10 +75,13 @@ class State(TypedDict):
     """A mapping of collection id to geoparquet href."""
 
 
-
 # Middleware to inject latest collections/hrefs into request.state
-def collections_hot_reload_middleware(settings: Settings):
-    async def middleware(request: Request, call_next):
+def collections_hot_reload_middleware(
+    settings: Settings,
+) -> Callable[[Request, Callable[[Request], Awaitable[Response]]], Awaitable[Response]]:
+    async def middleware(
+        request: Request, call_next: Callable[[Request], Awaitable[Response]]
+    ) -> Response:
         collections = await get_cached_collections(settings)
         collection_dict = dict()
         hrefs = dict()
@@ -103,17 +108,24 @@ def collections_hot_reload_middleware(settings: Settings):
         request.state.hrefs = hrefs
         response = await call_next(request)
         return response
+
     return middleware
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[State]:
     client = app.extra["duckdb_client"]
     settings: Settings = app.extra["settings"]
     # Start background refresher
-    app.state._collections_refresher = asyncio.create_task(collections_cache_refresher(settings))
-    yield {"client": client}
+    app.state._collections_refresher = asyncio.create_task(
+        collections_cache_refresher(settings)
+    )
+    yield {
+        "client": client,
+        "collections": {},
+        "hrefs": {},
+    }
     app.state._collections_refresher.cancel()
-
 
 
 def create(

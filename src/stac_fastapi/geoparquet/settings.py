@@ -1,7 +1,6 @@
 from stac_fastapi.types.config import ApiSettings
 
 
-
 class Settings(ApiSettings):
     """stac-fastapi-geoparquet settings"""
 
