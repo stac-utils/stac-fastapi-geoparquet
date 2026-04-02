@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.5](https://github.com/stac-utils/stac-fastapi-geoparquet/compare/v0.0.4...v0.0.5) (2026-04-02)
+
+
+### Bug Fixes
+
+* correctly forward `offset` for items endpoint ([#49](https://github.com/stac-utils/stac-fastapi-geoparquet/issues/49)) ([c6c95f7](https://github.com/stac-utils/stac-fastapi-geoparquet/commit/c6c95f773bc4cc46a360365938ddcf4dc3098cce))
+
 ## [0.0.4](https://github.com/stac-utils/stac-fastapi-geoparquet/compare/v0.0.3...v0.0.4) (2026-01-21)
 
 
