@@ -1,4 +1,5 @@
 import stac_fastapi.api.models
+from stac_fastapi.api.models import ItemCollectionUri
 from stac_fastapi.extensions.core.fields import FieldsExtension
 from stac_fastapi.extensions.core.filter import SearchFilterExtension
 from stac_fastapi.extensions.core.pagination import OffsetPaginationExtension
@@ -19,4 +20,7 @@ GetSearchRequestModel = stac_fastapi.api.models.create_get_request_model(
 )
 PostSearchRequestModel = stac_fastapi.api.models.create_post_request_model(
     base_model=BaseSearchPostRequest, extensions=EXTENSIONS
+)
+ItemsGetRequestModel = stac_fastapi.api.models.create_get_request_model(
+    base_model=ItemCollectionUri, extensions=EXTENSIONS
 )
