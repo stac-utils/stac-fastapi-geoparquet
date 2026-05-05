@@ -163,6 +163,12 @@ class Client(BaseCoreClient):
     ) -> ItemCollection:
         client = cast(DuckdbClient, request.state.client)
         hrefs = cast(dict[str, str], request.state.hrefs)
+        
+        s3end = os.getenv("AWS_S3_ENDPOINT")
+        if s3end:
+            client.execute(f"CREATE OR REPLACE SECRET (TYPE S3, PROVIDER CREDENTIAL_CHAIN, REFRESH auto, ENDPOINT '{s3end}');")
+        else:
+            client.execute(f"CREATE OR REPLACE SECRET (TYPE S3, PROVIDER CREDENTIAL_CHAIN, REFRESH auto);")
 
         if search.collections:
             collections = search.collections
