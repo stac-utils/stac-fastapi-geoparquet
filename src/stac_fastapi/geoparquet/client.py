@@ -380,5 +380,13 @@ def collection_with_links(collection: Collection, request: Request) -> Collectio
             "rel": "items",
             "type": "application/geo+json",
         },
+        {
+            "href": str(
+                request.url_for("Collection Queryables", collection_id=collection["id"])
+            ),
+            "rel": "http://www.opengis.net/def/rel/ogc/1.0/queryables",
+            "type": "application/schema+json",
+            "title": "Queryables",
+        },
     ]
     return collection

@@ -9,6 +9,7 @@ from typing import Any, TypedDict
 import obstore.store
 import pystac.utils
 from fastapi import FastAPI, HTTPException
+from fastapi.routing import APIRouter
 from rustac import DuckdbClient
 from stac_fastapi.api.app import StacApi
 

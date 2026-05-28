@@ -3,24 +3,21 @@ name = "stac-fastapi-geoparquet"
 version = "0.0.4"
 description = "A stac-fastapi implementation with a stac-geoparquet backend"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.14"
 dependencies = [
+    "arro3-core>=0.8.0",
     "attr>=0.3.2",
     "fastapi>=0.115.8",
     "geojson-pydantic>=1.2.0",
     "obstore>=0.8.0",
     "pydantic>=2.10.4",
     "pystac>=1.13.0",
-    "rustac>=0.7.0",
+    "rustac>=0.9.11",
     "stac-fastapi-api>=5.0.2",
     "stac-fastapi-extensions>=5.0.2",
     "stac-fastapi-types>=5.0.2",
 ]
 classifiers = [
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
-    "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
     "Development Status :: 1 - Planning",
 ]
