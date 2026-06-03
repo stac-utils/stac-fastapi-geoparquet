@@ -11,8 +11,8 @@ import obstore.store
 import pystac.utils
 from fastapi import FastAPI, Request, Response
 from rustac import DuckdbClient
-from starlette.background import BackgroundTask
 from stac_fastapi.api.app import StacApi
+from starlette.background import BackgroundTask
 
 from .client import Client
 from .models import (
@@ -59,9 +59,7 @@ def _parse_collections(
         for asset in collection["assets"].values():
             if asset.get("type") == GEOPARQUET_MEDIA_TYPE:
                 if collection_id in hrefs:
-                    raise ValueError(
-                        f"two hrefs for one collection: {collection_id}"
-                    )
+                    raise ValueError(f"two hrefs for one collection: {collection_id}")
                 hrefs[collection_id] = pystac.utils.make_absolute_href(
                     asset["href"],
                     settings.stac_fastapi_collections_href,
@@ -89,8 +87,7 @@ def make_collections_middleware(
     are injected into ``request.state`` so that the rest of the stack is
     unaffected.  After the response is sent, a background task re-reads
     ``collections.json`` from object storage and updates ``app.state`` when the
-    configured TTL has elapsed — the same pattern used by tipg's
-    ``CatalogUpdateMiddleware``.
+    configured TTL has elapsed.
     """
 
     async def _refresh(app: FastAPI) -> None:
@@ -103,16 +100,16 @@ def make_collections_middleware(
         app.state.collections = collection_dict
         app.state.hrefs = hrefs
         app.state.collections_last_updated = datetime.now()
-        logger.debug("Collections reloaded; %d collection(s) active", len(collection_dict))
+        logger.debug(
+            "Collections reloaded; %d collection(s) active", len(collection_dict)
+        )
 
     async def middleware(
         request: Request, call_next: Callable[[Request], Awaitable[Response]]
     ) -> Response:
-        # Propagate the current (possibly cached) state into this request.
         request.state.collections = request.app.state.collections
         request.state.hrefs = request.app.state.hrefs
 
-        # Trigger a background refresh when the TTL has expired.
         background: BackgroundTask | None = None
         last_updated: datetime | None = getattr(
             request.app.state, "collections_last_updated", None
@@ -121,8 +118,6 @@ def make_collections_middleware(
         if last_updated is None or datetime.now() > last_updated + timedelta(
             seconds=ttl
         ):
-            # Optimistically advance the timestamp so concurrent requests
-            # during the same window don't all queue a refresh.
             request.app.state.collections_last_updated = datetime.now()
             background = BackgroundTask(_refresh, request.app)
 
