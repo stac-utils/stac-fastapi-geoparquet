@@ -87,6 +87,7 @@ def test_collections_no_reload_within_ttl() -> None:
         # Collections should be unchanged.
         assert len(client.get("/collections").json()["collections"]) == initial_count
 
+
 def test_duckdb_client_injected() -> None:
     duckdb_client = DuckdbClient()
     settings = Settings(stac_fastapi_collections_href=str(COLLECTIONS_PATH))
