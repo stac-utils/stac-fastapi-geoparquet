@@ -107,6 +107,7 @@ def make_collections_middleware(
     async def middleware(
         request: Request, call_next: Callable[[Request], Awaitable[Response]]
     ) -> Response:
+        request.state.client = request.app.state.client
         request.state.collections = request.app.state.collections
         request.state.hrefs = request.app.state.hrefs
 
@@ -138,6 +139,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[State]:
     # with an empty catalog.
     raw = await load_collections(settings)
     collection_dict, hrefs = _parse_collections(raw, settings)
+    app.state.client = client
     app.state.collections = collection_dict
     app.state.hrefs = hrefs
     app.state.collections_last_updated = datetime.now()

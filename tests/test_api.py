@@ -86,3 +86,22 @@ def test_collections_no_reload_within_ttl() -> None:
 
         # Collections should be unchanged.
         assert len(client.get("/collections").json()["collections"]) == initial_count
+
+
+def test_duckdb_client_injected() -> None:
+    duckdb_client = DuckdbClient()
+    settings = Settings(stac_fastapi_collections_href=str(COLLECTIONS_PATH))
+    api = stac_fastapi.geoparquet.api.create(
+        duckdb_client=duckdb_client, settings=settings
+    )
+    with TestClient(api.app) as client:
+        response = client.get("/search")
+        assert response.status_code == 200
+        assert api.app.state.client is duckdb_client
+
+        # Replace the client at runtime and verify the new one is used.
+        new_client = DuckdbClient()
+        api.app.state.client = new_client
+        response = client.get("/search")
+        assert response.status_code == 200
+        assert api.app.state.client is new_client
