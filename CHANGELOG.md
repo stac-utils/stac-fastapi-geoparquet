@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.6](https://github.com/stac-utils/stac-fastapi-geoparquet/compare/v0.0.5...v0.0.6) (2026-06-08)
+
+
+### Features
+
+* inject DuckDB client via app.state to allow runtime replacement ([#64](https://github.com/stac-utils/stac-fastapi-geoparquet/issues/64)) ([f31612c](https://github.com/stac-utils/stac-fastapi-geoparquet/commit/f31612c9d8fa43913f70187e4b03aad1abf91b72))
+
 ## [0.0.5](https://github.com/stac-utils/stac-fastapi-geoparquet/compare/v0.0.4...v0.0.5) (2026-04-02)
 
 
