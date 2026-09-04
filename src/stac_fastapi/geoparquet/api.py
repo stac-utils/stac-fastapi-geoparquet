@@ -180,6 +180,11 @@ def create(
         settings=settings,
         collections=collections,
         duckdb_client=duckdb_client,
+        # `/collections/` 404s rather than redirecting to `/collections`.
+        # Starlette builds the redirect's Location from the request's own
+        # host, which behind a proxy is the internal one, so the client is
+        # sent somewhere it can't reach.
+        redirect_slashes=False,
     )
     # Add hot-reload middleware
     app.middleware("http")(make_collections_middleware(settings))

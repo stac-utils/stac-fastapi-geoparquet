@@ -105,3 +105,10 @@ def test_duckdb_client_injected() -> None:
         response = client.get("/search")
         assert response.status_code == 200
         assert api.app.state.client is new_client
+
+
+def test_no_slash_redirect(client: TestClient) -> None:
+    # A trailing-slash redirect would send clients to the app's own host,
+    # which behind a proxy isn't reachable.
+    response = client.get("/collections/", follow_redirects=False)
+    assert response.status_code == 404
