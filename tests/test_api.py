@@ -105,3 +105,16 @@ def test_duckdb_client_injected() -> None:
         response = client.get("/search")
         assert response.status_code == 200
         assert api.app.state.client is new_client
+
+
+def test_swagger_ui_is_self_hosted(client: TestClient) -> None:
+    response = client.get("/api.html")
+    assert response.status_code == 200
+    body = response.text
+    assert "/static/swagger-ui-bundle.js" in body
+    assert "/static/swagger-ui.css" in body
+    assert "cdn.jsdelivr.net" not in body
+
+    # ... and the assets it points at are actually served
+    for asset in ("/static/swagger-ui-bundle.js", "/static/swagger-ui.css"):
+        assert client.get(asset).status_code == 200, asset
