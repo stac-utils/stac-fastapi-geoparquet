@@ -18,6 +18,26 @@ from .models import PostSearchRequestModel
 DEFAULT_LIMIT = 10_000
 
 
+def _public_search_body(search_dict: dict[str, Any]) -> dict[str, Any]:
+    """Return a caller-visible copy of ``search_dict`` for pagination links.
+
+    The internal ``include``/``exclude`` keys (rustac's projection arguments)
+    are folded back into the API-level ``fields`` parameter so the link
+    round-trips through the request models.
+    """
+    body = copy.deepcopy(search_dict)
+    include = body.pop("include", None)
+    exclude = body.pop("exclude", None)
+    if include or exclude:
+        fields: dict[str, list[str]] = {}
+        if include:
+            fields["include"] = include
+        if exclude:
+            fields["exclude"] = exclude
+        body["fields"] = fields
+    return body
+
+
 class Client(BaseCoreClient):
     """A stac-fastapi-geoparquet client."""
 
@@ -178,7 +198,9 @@ class Client(BaseCoreClient):
                 exclude = []
                 for field in fields:
                     if field.startswith("-"):
-                        exclude.append(field)
+                        exclude.append(field[1:])
+                    elif field.startswith("+"):
+                        include.append(field[1:])
                     else:
                         include.append(field)
                 search_dict.update({"include": include, "exclude": exclude})
@@ -226,7 +248,7 @@ class Client(BaseCoreClient):
         num_items = len(items)
 
         if collections and ((search.limit or DEFAULT_LIMIT) <= num_items):
-            next_search = copy.deepcopy(search_dict)
+            next_search = _public_search_body(search_dict)
             next_search["limit"] = search.limit or DEFAULT_LIMIT
             next_search["offset"] = offset
             next_search["collections"] = collections
@@ -254,9 +276,30 @@ class Client(BaseCoreClient):
                     next_search["collections"] = ",".join(collections)
                 if bbox := next_search.get("bbox"):
                     next_search["bbox"] = ",".join(map(str, bbox))
+                if fields := next_search.pop("fields", None):
+                    # Serialize back to the GET form: `id,geometry,-foo`
+                    next_search["fields"] = ",".join(
+                        [
+                            *fields.get("include", []),
+                            *(f"-{f}" for f in fields.get("exclude", [])),
+                        ]
+                    )
+
+                # Drop empty values rather than round-tripping them as the
+                # literal strings "None" / "[None]".
+                clean_next_search = {
+                    k: v
+                    for k, v in next_search.items()
+                    if v is not None
+                    and v not in ("", "None", "[None]", "['None']", '["None"]')
+                }
+
                 links.append(
                     {
-                        "href": url + "?" + urllib.parse.urlencode(next_search),
+                        "href": url
+                        + "?"
+                        # doseq so list values encode as repeated parameters
+                        + urllib.parse.urlencode(clean_next_search, doseq=True),
                         "rel": "next",
                         "type": "application/geo+json",
                         "method": "GET",
@@ -269,7 +312,7 @@ class Client(BaseCoreClient):
                     "rel": "self",
                     "type": "application/geo+json",
                     "method": "POST",
-                    "body": search_dict,
+                    "body": _public_search_body(search_dict),
                 }
             )
             if next_search:
@@ -290,6 +333,9 @@ class Client(BaseCoreClient):
         }
 
     def item_with_links(self, item: Item, request: Request, collection: str) -> Item:
+        # `properties` is required on a STAC Item, but a `fields` projection
+        # that selects none of them drops the key entirely.
+        item.setdefault("properties", {})
         links = [
             {
                 "href": str(request.url_for("Landing Page")),
