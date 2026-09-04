@@ -17,9 +17,11 @@ from starlette.background import BackgroundTask
 from .client import Client
 from .models import (
     EXTENSIONS,
+    CollectionSearchRequest,
     GetSearchRequestModel,
     ItemsGetRequestModel,
     PostSearchRequestModel,
+    collection_search_ext,
 )
 from .settings import Settings
 
@@ -191,7 +193,11 @@ def create(
         search_get_request_model=GetSearchRequestModel,
         search_post_request_model=PostSearchRequestModel,
         items_get_request_model=ItemsGetRequestModel,
-        extensions=EXTENSIONS,
+        collections_get_request_model=CollectionSearchRequest,
+        # collection_search_ext contributes conformance classes only (its
+        # register() is a no-op); the /collections request model is the
+        # hand-crafted CollectionSearchRequest above.
+        extensions=[*EXTENSIONS, collection_search_ext],
     )
     return api
 
