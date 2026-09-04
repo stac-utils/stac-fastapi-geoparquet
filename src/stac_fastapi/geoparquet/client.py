@@ -1,5 +1,6 @@
 import copy
 import json
+import logging
 import urllib.parse
 from typing import Any, cast
 
@@ -14,12 +15,136 @@ from stac_pydantic.shared import BBox
 from starlette.requests import Request
 
 from .models import PostSearchRequestModel
+from .schema import describe_columns, text_columns
+
+logger = logging.getLogger(__name__)
 
 DEFAULT_LIMIT = 10_000
+
+# Free-text searchable columns, keyed by geoparquet href. A file's schema
+# doesn't change under us, and the alternative is a DESCRIBE per `q` search.
+_TEXT_COLUMNS_CACHE: dict[str, list[str]] = {}
+
+
+def _cql2_text_identifier(prop: str) -> str:
+    """Quote a property name for CQL2-text so it can't inject filter syntax."""
+    return '"' + prop.replace('"', '""') + '"'
+
+
+def _cql2_text_literal(value: str) -> str:
+    """Quote a string for CQL2-text."""
+    return "'" + value.replace("'", "''") + "'"
+
+
+def _free_text_clauses_text(terms: list[str], columns: list[str]) -> list[str]:
+    """One CQL2-text predicate per (term, column) pair.
+
+    Per the Free-Text Search extension matching is case-insensitive and
+    partial, hence ``CASEI`` around a ``LIKE '%term%'``.
+    """
+    return [
+        f"CASEI({_cql2_text_identifier(column)}) LIKE "
+        f"CASEI({_cql2_text_literal(f'%{term}%')})"
+        for term in terms
+        for column in columns
+    ]
+
+
+def _free_text_clauses_json(
+    terms: list[str], columns: list[str]
+) -> list[dict[str, Any]]:
+    """The CQL2-json equivalent of :func:`_free_text_clauses_text`."""
+    return [
+        {
+            "op": "like",
+            "args": [
+                {"op": "casei", "args": [{"property": column}]},
+                {"op": "casei", "args": [f"%{term}%"]},
+            ],
+        }
+        for term in terms
+        for column in columns
+    ]
+
+
+def _apply_free_text(
+    search_dict: dict[str, Any],
+    terms: list[str],
+    columns: list[str],
+    filter_lang: str,
+) -> None:
+    """Fold a free-text search into ``search_dict``'s filter, in place.
+
+    An item matches if any term appears in any text column, so the natural
+    encoding is ``existing AND (a OR b OR ...)``. That form is miscomputed by
+    the backend today: a parenthesised OR nested under an AND loses its
+    grouping on the way to SQL, so rows that fail ``existing`` come back
+    anyway. Distributing the disjunction into ``(existing AND a) OR (existing
+    AND b)`` needs no grouping to survive, because SQL binds AND tighter than
+    OR.
+    """
+    existing = search_dict.get("filter")
+    if filter_lang == "cql2-text":
+        clauses = _free_text_clauses_text(terms, columns)
+        if existing:
+            search_dict["filter"] = " OR ".join(
+                f"({existing}) AND ({clause})" for clause in clauses
+            )
+        else:
+            search_dict["filter"] = " OR ".join(clauses)
+    else:
+        json_clauses: list[Any] = list(_free_text_clauses_json(terms, columns))
+        if existing:
+            json_clauses = [
+                {"op": "and", "args": [existing, clause]} for clause in json_clauses
+            ]
+        search_dict["filter"] = (
+            json_clauses[0]
+            if len(json_clauses) == 1
+            else {"op": "or", "args": json_clauses}
+        )
+    search_dict["filter-lang"] = filter_lang
 
 
 class Client(BaseCoreClient):
     """A stac-fastapi-geoparquet client."""
+
+    def text_columns(self, href: str, request: Request) -> list[str]:
+        """Return the columns a free-text search should look at."""
+        if href not in _TEXT_COLUMNS_CACHE:
+            client = cast(DuckdbClient, request.state.client)
+            try:
+                columns = text_columns(describe_columns(client, href))
+            except Exception:
+                logger.exception("Could not read the schema of %s", href)
+                columns = []
+            _TEXT_COLUMNS_CACHE[href] = columns
+        return _TEXT_COLUMNS_CACHE[href]
+
+    def visible_collections(self, request: Request) -> dict[str, Collection]:
+        """Return the collections this request is allowed to see.
+
+        Every endpoint goes through here instead of reading
+        ``request.state.collections`` directly, so a subclass can hide
+        collections from a caller by overriding this one method.
+        """
+        return cast(dict[str, Collection], request.state.collections)
+
+    def search_collection(
+        self,
+        collection_id: str,
+        href: str,
+        search_dict: dict[str, Any],
+        request: Request,
+    ) -> list[Item]:
+        """Run one collection's share of a search against its geoparquet.
+
+        The single point where a search reaches the DuckDB client, so a
+        subclass can adjust ``search_dict`` (extra filters, extra projected
+        columns) or post-process the returned items.
+        """
+        client = cast(DuckdbClient, request.state.client)
+        return cast(list[Item], client.search(href, **search_dict))
 
     def all_collections(self, **kwargs: Any) -> Collections:
         request = kwargs.pop("request")
@@ -162,15 +287,24 @@ class Client(BaseCoreClient):
             collections = list(hrefs.keys())
 
         search_dict = search.model_dump(exclude_none=True, by_alias=True)
-        search_dict.update(**kwargs)
+        # A GET parameter the caller didn't provide arrives as None. The POST
+        # body already excludes those (`exclude_none`); do the same here so an
+        # unset parameter isn't forwarded to the backend or echoed into the
+        # pagination links as the literal string "None".
+        search_dict.update({k: v for k, v in kwargs.items() if v is not None})
 
         search_dict.pop("filter_crs", None)
         if filter_expr := search_dict.pop("filter_expr", None):
             search_dict["filter"] = filter_expr
-        if filter_lang := search_dict.pop("filter_lang", None):
+        # POST spells it "filter-lang" (the pydantic alias) and GET spells it
+        # "filter_lang" (a Python identifier, via the dependency function), so
+        # both are read here.
+        filter_lang: str | None = search_dict.pop(
+            "filter-lang", None
+        ) or search_dict.pop("filter_lang", None)
+        if filter_lang:
             search_dict["filter-lang"] = filter_lang
         if "filter" not in search_dict:
-            search_dict.pop("filter_lang", None)
             search_dict.pop("filter-lang", None)
         if fields := search_dict.pop("fields", None):
             if isinstance(fields, list):
@@ -194,6 +328,21 @@ class Client(BaseCoreClient):
         if sortby := search_dict.pop("sortby", None):
             search_dict["sortby"] = sortby
 
+        # The Free-Text extension's `q` is resolved per collection (the set of
+        # text columns differs between them), so it's translated inside the
+        # loop below rather than here.
+        free_text: list[str] | None = search_dict.get("q") or None
+        if isinstance(free_text, str):
+            # GET requests hand it over as a comma-separated string.
+            free_text = [term.strip() for term in free_text.split(",") if term.strip()]
+        if free_text:
+            filter_lang = filter_lang or "cql2-text"
+            if filter_lang not in ("cql2-text", "cql2-json"):
+                raise HTTPException(
+                    400,
+                    f"Unsupported filter-lang for the 'q' parameter: {filter_lang!r}",
+                )
+
         limit = search_dict.get("limit", DEFAULT_LIMIT)
         offset = search_dict.get("offset", 0) or 0
         items: list[Item] = []
@@ -208,6 +357,21 @@ class Client(BaseCoreClient):
                         "offset": offset,
                     }
                 )
+                # rustac has no free-text search of its own, so `q` becomes a
+                # CQL2 filter over this collection's text columns.
+                collection_search_dict.pop("q", None)
+                if free_text:
+                    columns = self.text_columns(href, request)
+                    if not columns:
+                        # Nothing searchable here, so nothing can match.
+                        continue
+                    _apply_free_text(
+                        collection_search_dict,
+                        free_text,
+                        columns,
+                        cast(str, filter_lang),
+                    )
+
                 collection_items = client.search(href, **collection_search_dict)
                 for item in collection_items:
                     # Careful ... we aren't updating `collection_items` with the
