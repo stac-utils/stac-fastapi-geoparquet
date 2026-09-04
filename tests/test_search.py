@@ -107,6 +107,76 @@ def test_filter_post(client: TestClient) -> None:
     assert len(response.json()["features"]) == 0
 
 
+def test_query_ext_post(client: TestClient) -> None:
+    params = {"limit": 1, "query": {"naip:year": {"eq": "2022"}}}
+    response = client.post("/search", json=params)
+    response.raise_for_status()
+    assert len(response.json()["features"]) == 1
+    assert response.json()["features"][0]["properties"]["naip:year"] == "2022"
+
+    params = {"limit": 1, "query": {"naip:year": {"eq": "notayear"}}}
+    response = client.post("/search", json=params)
+    response.raise_for_status()
+    assert not response.json()["features"]
+
+
+def test_query_ext_get(client: TestClient) -> None:
+    # On GET requests `query` arrives as a JSON-encoded string.
+    params = {"limit": 1, "query": '{"naip:year": {"eq": "2022"}}'}
+    response = client.get("/search", params=params)
+    response.raise_for_status()
+    assert len(response.json()["features"]) == 1
+    assert response.json()["features"][0]["properties"]["naip:year"] == "2022"
+
+    params = {"limit": 1, "query": '{"naip:year": {"eq": "notayear"}}'}
+    response = client.get("/search", params=params)
+    response.raise_for_status()
+    assert not response.json()["features"]
+
+
+def test_query_ext_operators(client: TestClient) -> None:
+    for query, expected in (
+        ({"naip:year": {"neq": "2022"}}, lambda y: y != "2022"),
+        ({"naip:year": {"in": ["2022"]}}, lambda y: y == "2022"),
+        ({"naip:year": {"startsWith": "202"}}, lambda y: y.startswith("202")),
+    ):
+        response = client.post("/search", json={"limit": 5, "query": query})
+        response.raise_for_status()
+        features = response.json()["features"]
+        assert features, query
+        for feature in features:
+            assert expected(feature["properties"]["naip:year"]), query
+
+
+def test_query_ext_get_invalid_json(client: TestClient) -> None:
+    response = client.get("/search", params={"query": "{not json"})
+    assert response.status_code == 400
+
+
+def test_query_ext_unsupported_operator(client: TestClient) -> None:
+    response = client.post("/search", json={"query": {"naip:year": {"wat": "2022"}}})
+    assert response.status_code == 400
+
+
+def test_query_ext_combines_with_filter(client: TestClient) -> None:
+    params = {
+        "limit": 10,
+        "filter": {"op": "=", "args": [{"property": "naip:year"}, "2022"]},
+        "query": {"naip:state": {"eq": "ne"}},
+    }
+    response = client.post("/search", json=params)
+    response.raise_for_status()
+    assert response.json()["features"]
+    for feature in response.json()["features"]:
+        assert feature["properties"]["naip:year"] == "2022"
+        assert feature["properties"]["naip:state"] == "ne"
+
+
+def test_400_intersects(client: TestClient) -> None:
+    response = client.get("/search", params={"intersects": "{not json"})
+    assert response.status_code == 400
+
+
 def test_paging_filter(client: TestClient) -> None:
     params = {"limit": 1, "filter": "naip:year='2022'"}
     response = client.get("/search", params=params)
