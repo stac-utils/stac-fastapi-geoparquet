@@ -105,3 +105,30 @@ def test_duckdb_client_injected() -> None:
         response = client.get("/search")
         assert response.status_code == 200
         assert api.app.state.client is new_client
+
+
+def test_create_with_a_client_subclass(extension_directory: Path) -> None:
+    from stac_fastapi.types.stac import Collection
+    from starlette.requests import Request
+
+    from stac_fastapi.geoparquet.client import Client
+
+    class OnlyNaip(Client):
+        def visible_collections(self, request: Request) -> dict[str, Collection]:
+            collections = super().visible_collections(request)
+            return {k: v for k, v in collections.items() if k == "naip"}
+
+    duckdb_client = DuckdbClient(extension_directory=str(extension_directory))
+    settings = Settings(stac_fastapi_collections_href=str(COLLECTIONS_PATH))
+    api = stac_fastapi.geoparquet.api.create(
+        duckdb_client=duckdb_client, settings=settings, client=OnlyNaip()
+    )
+    with TestClient(api.app) as client:
+        response = client.get("/collections")
+        assert [c["id"] for c in response.json()["collections"]] == ["naip"]
+
+        # A hidden collection is a 404, and searching it returns nothing.
+        assert client.get("/collections/openaerialmap").status_code == 404
+        assert client.get("/collections/openaerialmap/items").status_code == 404
+        response = client.get("/search", params={"collections": "openaerialmap"})
+        assert response.json()["features"] == []

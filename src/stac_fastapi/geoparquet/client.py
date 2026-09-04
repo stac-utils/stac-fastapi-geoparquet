@@ -21,9 +21,34 @@ DEFAULT_LIMIT = 10_000
 class Client(BaseCoreClient):
     """A stac-fastapi-geoparquet client."""
 
+    def visible_collections(self, request: Request) -> dict[str, Collection]:
+        """Return the collections this request is allowed to see.
+
+        Every endpoint reads its collections from here rather than from
+        ``request.state`` directly, so a subclass can hide some of them from a
+        caller by overriding this one method.
+        """
+        return cast(dict[str, Collection], request.state.collections)
+
+    def search_collection(
+        self,
+        collection_id: str,
+        href: str,
+        search_dict: dict[str, Any],
+        request: Request,
+    ) -> list[Item]:
+        """Run one collection's share of a search against its geoparquet.
+
+        The single point where a search reaches the DuckDB client, so a
+        subclass can adjust ``search_dict`` (extra filters, extra projected
+        columns) or post-process the items on the way back.
+        """
+        client = cast(DuckdbClient, request.state.client)
+        return cast(list[Item], client.search(href, **search_dict))
+
     def all_collections(self, **kwargs: Any) -> Collections:
         request = kwargs.pop("request")
-        collections = cast(dict[str, Collection], request.state.collections)
+        collections = self.visible_collections(request)
         return Collections(
             collections=[
                 collection_with_links(c, request) for c in collections.values()
@@ -44,11 +69,19 @@ class Client(BaseCoreClient):
 
     def get_collection(self, collection_id: str, **kwargs: Any) -> Collection:
         request = kwargs.pop("request")
-        collections = cast(dict[str, Collection], request.state.collections)
-        if collection := collections.get(collection_id):
-            return collection_with_links(collection, request)
-        else:
+        collection = self._get_collection(collection_id, request)
+        return collection_with_links(collection, request)
+
+    def _get_collection(self, collection_id: str, request: Request) -> Collection:
+        """Return the collection, or raise :class:`NotFoundError`.
+
+        A collection hidden by :meth:`visible_collections` is indistinguishable
+        from one that doesn't exist.
+        """
+        collection = self.visible_collections(request).get(collection_id)
+        if collection is None:
             raise NotFoundError(f"Collection does not exist: {collection_id}")
+        return collection
 
     def get_item(self, item_id: str, collection_id: str, **kwargs: Any) -> Item:
         item_collection = self.get_search(
@@ -120,6 +153,9 @@ class Client(BaseCoreClient):
     ) -> ItemCollection:
         request = kwargs.pop("request")
         offset = kwargs.pop("offset", None)
+        # 404 rather than an empty FeatureCollection for a collection that
+        # doesn't exist or that the caller isn't allowed to see.
+        self._get_collection(collection_id, request)
         search = PostSearchRequestModel(
             collections=[collection_id],
             bbox=bbox,
@@ -153,13 +189,14 @@ class Client(BaseCoreClient):
         search: BaseSearchPostRequest,
         **kwargs: Any,
     ) -> ItemCollection:
-        client = cast(DuckdbClient, request.state.client)
         hrefs = cast(dict[str, str], request.state.hrefs)
+        all_collections = self.visible_collections(request)
 
         if search.collections:
-            collections = search.collections
+            # Honour the request, minus anything not visible to this caller.
+            collections = [c for c in search.collections if c in all_collections]
         else:
-            collections = list(hrefs.keys())
+            collections = [c for c in hrefs if c in all_collections]
 
         search_dict = search.model_dump(exclude_none=True, by_alias=True)
         search_dict.update(**kwargs)
@@ -208,13 +245,13 @@ class Client(BaseCoreClient):
                         "offset": offset,
                     }
                 )
-                collection_items = client.search(href, **collection_search_dict)
+                collection_items = self.search_collection(
+                    collection, href, collection_search_dict, request
+                )
                 for item in collection_items:
                     # Careful ... we aren't updating `collection_items` with the
                     # correct links.
-                    items.append(
-                        self.item_with_links(cast(Item, item), request, collection)
-                    )
+                    items.append(self.item_with_links(item, request, collection))
                 if len(items) >= limit:
                     collections.insert(0, collection)
                     offset = offset + len(collection_items)

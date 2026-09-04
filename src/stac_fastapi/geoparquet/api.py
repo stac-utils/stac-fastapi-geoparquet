@@ -12,6 +12,7 @@ import pystac.utils
 from fastapi import FastAPI, Request, Response
 from rustac import DuckdbClient
 from stac_fastapi.api.app import StacApi
+from stac_fastapi.types.core import BaseCoreClient
 from starlette.background import BackgroundTask
 
 from .client import Client
@@ -150,7 +151,13 @@ async def lifespan(app: FastAPI) -> AsyncIterator[State]:
 def create(
     settings: Settings | None = None,
     duckdb_client: DuckdbClient | None = None,
+    client: BaseCoreClient | None = None,
 ) -> StacApi:
+    """Build the STAC API application.
+
+    ``client`` defaults to :class:`~stac_fastapi.geoparquet.client.Client`;
+    pass a subclass to layer extra behaviour on top of it.
+    """
     if duckdb_client is None:
         duckdb_client = DuckdbClient()
     if settings is None:
@@ -186,7 +193,7 @@ def create(
 
     api = StacApi(
         settings=settings,
-        client=Client(),
+        client=client or Client(),
         app=app,
         search_get_request_model=GetSearchRequestModel,
         search_post_request_model=PostSearchRequestModel,
