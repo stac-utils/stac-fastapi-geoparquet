@@ -132,7 +132,7 @@ def test_fields_get(client: TestClient) -> None:
     )
     response.raise_for_status()
     data = response.json()
-    assert "properties" not in data["features"][0]
+    assert data["features"][0]["properties"] == {}
 
 
 def test_fields_post(client: TestClient) -> None:
@@ -146,7 +146,48 @@ def test_fields_post(client: TestClient) -> None:
     )
     response.raise_for_status()
     data = response.json()
-    assert "properties" not in data["features"][0]
+    assert data["features"][0]["properties"] == {}
+
+
+def test_fields_paging_fidelity(client: TestClient) -> None:
+    # The next link must carry the caller's `fields` selection, not the
+    # internal include/exclude keys, so page 2 is projected the same way.
+    response = client.get("/search", params={"limit": 1, "fields": "id,geometry"})
+    response.raise_for_status()
+    assert response.json()["features"][0]["properties"] == {}
+    next_link = next(link for link in response.json()["links"] if link["rel"] == "next")
+    query = urllib.parse.parse_qs(urllib.parse.urlparse(next_link["href"]).query)
+    assert query["fields"] == ["id,geometry"]
+    assert "include" not in query
+
+    response = client.get(next_link["href"])
+    response.raise_for_status()
+    assert response.json()["features"][0]["properties"] == {}
+
+
+def test_fields_exclude_get(client: TestClient) -> None:
+    response = client.get(
+        "/search",
+        params={"collections": "naip", "limit": 1, "fields": "-naip:year"},
+    )
+    response.raise_for_status()
+    properties = response.json()["features"][0]["properties"]
+    assert "naip:year" not in properties
+    assert properties  # other properties are still present
+
+
+def test_post_search_link_bodies_use_fields(client: TestClient) -> None:
+    response = client.post(
+        "/search", json={"limit": 1, "fields": {"include": ["id", "geometry"]}}
+    )
+    response.raise_for_status()
+    data = response.json()
+    for rel in ("self", "next"):
+        link = next(link for link in data["links"] if link["rel"] == rel)
+        body = link["body"]
+        assert "include" not in body, rel
+        # `include` is modeled as a set, so its order is not stable
+        assert sorted(body["fields"]["include"]) == ["geometry", "id"], rel
 
 
 def test_sort_get(client: TestClient) -> None:
