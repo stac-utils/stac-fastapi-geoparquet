@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 import urllib.parse
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
@@ -10,6 +11,9 @@ from typing import Any, TypedDict, cast
 import obstore.store
 import pystac.utils
 from fastapi import FastAPI, Request, Response
+from fastapi.openapi.docs import get_swagger_ui_html
+from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
 from rustac import DuckdbClient
 from stac_fastapi.api.app import StacApi
 from starlette.background import BackgroundTask
@@ -175,14 +179,39 @@ def create(
     app = FastAPI(
         lifespan=lifespan,
         openapi_url=settings.openapi_url,
-        docs_url=settings.docs_url,
-        redoc_url=settings.docs_url,
+        # Swagger UI is served from `/api.html` below, off the assets bundled
+        # with the package rather than a CDN, so FastAPI's own doc routes are
+        # disabled.
+        docs_url=None,
+        redoc_url=None,
         settings=settings,
         collections=collections,
         duckdb_client=duckdb_client,
     )
     # Add hot-reload middleware
     app.middleware("http")(make_collections_middleware(settings))
+
+    # The Swagger UI assets ship inside the package; resolve them relative to
+    # this module so it works in a source checkout, an installed wheel and a
+    # container alike. STATIC_DIR overrides the location.
+    static_dir = os.getenv("STATIC_DIR", str(Path(__file__).parent / "static"))
+    app.mount("/static", StaticFiles(directory=static_dir), name="static")
+
+    @app.get(str(settings.docs_url), include_in_schema=False, name="swagger_ui_html")
+    async def swagger_ui_html(request: Request) -> HTMLResponse:
+        # root_path comes from the request so the page works both directly and
+        # behind a proxy that mounts the app under a prefix.
+        root_path = request.scope.get("root_path", "").rstrip("/")
+        oauth2_redirect_url = app.swagger_ui_oauth2_redirect_url
+        if oauth2_redirect_url:
+            oauth2_redirect_url = root_path + oauth2_redirect_url
+        return get_swagger_ui_html(
+            openapi_url=root_path + str(app.openapi_url),
+            title=app.title + " - OpenAPI UI",
+            oauth2_redirect_url=oauth2_redirect_url,
+            swagger_js_url=root_path + "/static/swagger-ui-bundle.js",
+            swagger_css_url=root_path + "/static/swagger-ui.css",
+        )
 
     api = StacApi(
         settings=settings,
