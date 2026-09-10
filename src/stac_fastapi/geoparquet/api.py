@@ -77,9 +77,16 @@ class State(TypedDict):
     It's just an in-memory DuckDB connection with the spatial extension enabled.
     """
 
+    collections: dict[str, dict[str, Any]]
+    """A mapping of collection id to collection."""
+
+    hrefs: dict[str, str]
+    """A mapping of collection id to geoparquet href."""
+
 
 def make_collections_middleware(
     settings: Settings,
+    static_collections: list[dict[str, Any]],
 ) -> Callable[[Request, Callable[[Request], Awaitable[Response]]], Awaitable[Response]]:
     """Return a TTL-based hot-reload middleware for collections.
 
@@ -88,12 +95,18 @@ def make_collections_middleware(
     unaffected.  After the response is sent, a background task re-reads
     ``collections.json`` from object storage and updates ``app.state`` when the
     configured TTL has elapsed.
+
+    ``static_collections`` are the ones generated from
+    ``stac_fastapi_geoparquet_href``, which have no file to be re-read from;
+    they're carried across each reload so a refresh doesn't drop them.
     """
 
     async def _refresh(app: FastAPI) -> None:
         try:
             raw = await load_collections(settings)
-            collection_dict, hrefs = _parse_collections(raw, settings)
+            collection_dict, hrefs = _parse_collections(
+                static_collections + raw, settings
+            )
         except Exception:
             logger.exception("Failed to reload collections; keeping stale state")
             return
@@ -136,15 +149,22 @@ async def lifespan(app: FastAPI) -> AsyncIterator[State]:
     settings: Settings = app.extra["settings"]
 
     # Perform an initial blocking load so the first request is never served
-    # with an empty catalog.
+    # with an empty catalog. Collections auto-generated from
+    # `stac_fastapi_geoparquet_href` are built once in `create()` and arrive
+    # via `app.extra`; they aren't re-read, since nothing about them changes
+    # unless the file itself is replaced.
     raw = await load_collections(settings)
-    collection_dict, hrefs = _parse_collections(raw, settings)
+    collection_dict, hrefs = _parse_collections(
+        app.extra["collections"] + raw, settings
+    )
     app.state.client = client
     app.state.collections = collection_dict
     app.state.hrefs = hrefs
     app.state.collections_last_updated = datetime.now()
 
-    yield {"client": client}
+    # Also part of the request state, so requests are served correctly when
+    # the hot-reload middleware isn't installed (see `create`).
+    yield {"client": client, "collections": collection_dict, "hrefs": hrefs}
 
 
 def create(
@@ -181,8 +201,12 @@ def create(
         collections=collections,
         duckdb_client=duckdb_client,
     )
-    # Add hot-reload middleware
-    app.middleware("http")(make_collections_middleware(settings))
+    # The middleware exists to re-read `collections.json`, so it's only worth
+    # installing when there is one. Without it the request state comes
+    # straight from the lifespan, which is all a catalog generated from
+    # `stac_fastapi_geoparquet_href` needs.
+    if settings.stac_fastapi_collections_href:
+        app.middleware("http")(make_collections_middleware(settings, collections))
 
     api = StacApi(
         settings=settings,

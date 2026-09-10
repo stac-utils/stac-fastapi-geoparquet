@@ -34,6 +34,20 @@ def test_create_from_parquet_file() -> None:
     with TestClient(api.app) as client:
         response = client.get("/search")
         assert response.status_code == 200
+        assert len(response.json()["features"]) > 0
+
+        response = client.get("/collections")
+        assert [c["id"] for c in response.json()["collections"]] == ["naip"]
+
+        response = client.get("/collections/naip")
+        assert response.status_code == 200
+
+        # There is no collections.json to re-read, so no hot-reload middleware
+        # is installed and nothing can empty the catalog behind us.
+        api.app.state.collections_last_updated = datetime.now() - timedelta(seconds=120)
+        client.get("/collections")
+        response = client.get("/collections")
+        assert [c["id"] for c in response.json()["collections"]] == ["naip"]
 
 
 def test_collections_reload_on_ttl_expiry() -> None:
@@ -105,3 +119,33 @@ def test_duckdb_client_injected() -> None:
         response = client.get("/search")
         assert response.status_code == 200
         assert api.app.state.client is new_client
+
+
+def test_create_from_both_hrefs(tmp_path: Path) -> None:
+    # Both sources configured at once: the hot-reload middleware is installed
+    # for collections.json, and must not drop the parquet-generated ones.
+    # The checked-in fixtures all appear in collections.json, so rename the
+    # collection in a copy to avoid a duplicate id.
+    standalone = tmp_path / "standalone.parquet"
+    DuckdbClient().execute(
+        f"COPY (SELECT * REPLACE ('standalone' AS collection) "
+        f"FROM read_parquet('{NAIP_PATH}')) TO '{standalone}' (FORMAT PARQUET);"
+    )
+    settings = Settings(
+        stac_fastapi_collections_href=str(COLLECTIONS_PATH),
+        stac_fastapi_geoparquet_href=str(standalone),
+    )
+    api = stac_fastapi.geoparquet.api.create(settings=settings)
+    with TestClient(api.app) as client:
+        response = client.get("/collections")
+        ids = [c["id"] for c in response.json()["collections"]]
+        assert "standalone" in ids  # from the parquet file
+        assert "openaerialmap" in ids  # from collections.json
+
+        # Survives a reload, too.
+        api.app.state.collections_last_updated = datetime.now() - timedelta(seconds=120)
+        client.get("/collections")
+        response = client.get("/collections")
+        ids = [c["id"] for c in response.json()["collections"]]
+        assert "standalone" in ids
+        assert "openaerialmap" in ids
