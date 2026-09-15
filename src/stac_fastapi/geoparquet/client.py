@@ -333,9 +333,6 @@ class Client(BaseCoreClient):
         }
 
     def item_with_links(self, item: Item, request: Request, collection: str) -> Item:
-        # `properties` is required on a STAC Item, but a `fields` projection
-        # that selects none of them drops the key entirely.
-        item.setdefault("properties", {})
         links = [
             {
                 "href": str(request.url_for("Landing Page")),

@@ -132,7 +132,7 @@ def test_fields_get(client: TestClient) -> None:
     )
     response.raise_for_status()
     data = response.json()
-    assert data["features"][0]["properties"] == {}
+    assert "properties" not in data["features"][0]
 
 
 def test_fields_post(client: TestClient) -> None:
@@ -146,7 +146,7 @@ def test_fields_post(client: TestClient) -> None:
     )
     response.raise_for_status()
     data = response.json()
-    assert data["features"][0]["properties"] == {}
+    assert "properties" not in data["features"][0]
 
 
 def test_fields_paging_fidelity(client: TestClient) -> None:
@@ -154,7 +154,7 @@ def test_fields_paging_fidelity(client: TestClient) -> None:
     # internal include/exclude keys, so page 2 is projected the same way.
     response = client.get("/search", params={"limit": 1, "fields": "id,geometry"})
     response.raise_for_status()
-    assert response.json()["features"][0]["properties"] == {}
+    assert "properties" not in response.json()["features"][0]
     next_link = next(link for link in response.json()["links"] if link["rel"] == "next")
     query = urllib.parse.parse_qs(urllib.parse.urlparse(next_link["href"]).query)
     assert query["fields"] == ["id,geometry"]
@@ -162,7 +162,7 @@ def test_fields_paging_fidelity(client: TestClient) -> None:
 
     response = client.get(next_link["href"])
     response.raise_for_status()
-    assert response.json()["features"][0]["properties"] == {}
+    assert "properties" not in response.json()["features"][0]
 
 
 def test_fields_exclude_get(client: TestClient) -> None:
