@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.8](https://github.com/stac-utils/stac-fastapi-geoparquet/compare/v0.0.7...v0.0.8) (2026-10-27)
+
+
+### Bug Fixes
+
+* search with fields and filter ([#96](https://github.com/stac-utils/stac-fastapi-geoparquet/issues/96)) ([104e439](https://github.com/stac-utils/stac-fastapi-geoparquet/commit/104e4396860c52944a46c94e04263f90fab51c1a))
+
 ## [0.0.7](https://github.com/stac-utils/stac-fastapi-geoparquet/compare/v0.0.6...v0.0.7) (2026-10-21)
 
 
