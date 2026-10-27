@@ -217,3 +217,13 @@ def test_paging_bbox(client: TestClient) -> None:
     next_link = next(link for link in response.json()["links"] if link["rel"] == "next")
     response = client.get(next_link["href"])
     response.raise_for_status()
+
+
+def test_fields_and_filter(client: TestClient) -> None:
+    # https://github.com/stac-utils/stac-fastapi-geoparquet/issues/95
+    response = client.get(
+        "/search",
+        params={"fields": "id", "filter": "\"naip:state\" = 'co'", "limit": 10000},
+    )
+    response.raise_for_status()
+    assert len(response.json()["features"]) == 9303
